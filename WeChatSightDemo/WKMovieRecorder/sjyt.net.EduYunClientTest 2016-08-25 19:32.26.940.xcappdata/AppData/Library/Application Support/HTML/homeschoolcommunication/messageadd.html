@@ -1,0 +1,974 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <link href="../css/swiper.min.css" rel="stylesheet" />
+    <link href="../css/commom.css" rel="stylesheet" />
+    <!--<script src="../../js/jquery-1.10.2.min.js"></script>-->
+    <script src="../js/jquery-1.6.1.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script src="../js/usercontrolls.js"></script>
+    <title></title>
+    <style>
+        body {
+            overflow-x: hidden;
+        }
+
+        .swiper-slide {
+            overflow-y: scroll;
+        }
+    </style>
+
+    <style>
+        html, body {
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body style="overflow-x:scroll">
+    <div id="pageContext" data-role="page">
+        <div class="bgblock">
+            <div>
+                <input class="mlper6 widper90  p15 g-line " style="padding:0px;" type="text" placeholder="请在此输入标题" id="title" maxlength="30" />
+            </div>
+            <div class="line"></div>
+            <div>
+                <textarea class="bgtextarea mlper6 pat last p15" placeholder="请在此输入内容" id="context" maxlength="400"></textarea>
+            </div>
+            <div id="result" class="mlper6">
+
+                <div class="addimg mt10"></div>
+
+            </div>
+
+        </div>
+        <div class="bb1 patb">
+            <div class="bgitem oneline wb mlper6 last">
+                <div class="">
+                    <img class="icon mt14" src="../images/tzbj.png">
+                </div>
+                <div class="widper90">
+                    <input class="bgiconitem mlper3 widper94 nowrap" placeholder="所有班级" readonly="readonly" id="txt_class" />
+                </div>
+            </div>
+            <div class="bgitem oneline wb mlper6 last" id="div_obj">
+                <div class="widper10">
+                    <img class="icon mt14" src="../images/tzdx.png">
+                </div>
+                <div class="widper90">
+                    <input class="bgiconitem widper94 nowrap" placeholder="全部通知对象" readonly="readonly" id="obj" />
+                </div>
+            </div>
+            <div class="bgitem oneline wb mlper6 last">
+                <div class="">
+                    <img class="icon mt14" src="../images/jhfbsj.png">
+                </div>
+                <div class="widper90">
+                    <input class="bgiconitem mlper3  widper94" onclick="selectDate(this,2)" placeholder="计划发布时间" id="plan_time" readonly="readonly" />
+                </div>
+            </div>
+        </div>
+        <div class="mtonerem">
+            <label class="relative wb mlper6 widper94" onclick="ischeck(this,true)">
+                <div class="widper10 ">
+                    <input type="checkbox" id="mes" class="ckbox ckboxout" />
+                </div>
+                <div class="p14 widper80 g-font ">
+                    同步发送短信（短信将无法接收图片）
+                </div>
+            </label>
+        </div>
+        <div class="mtb10">
+            <span class="btn btnwhite btnbig block" id="submit"> 完成</span>
+        </div>
+    </div>
+    <div class="detailblock hide pab">
+        <div class="widper100">
+            <img src='../../images/kqbg.png' class="widper100 bordertlr" />
+        </div>
+        <div id="class_list"></div>
+
+        <div id="objs"></div>
+    </div>
+    <div id="uploadDiv" class="overlay hide ">
+        <div class="tcenter  overbutton widper100">
+            <div class="bgwhite btndiv">
+                <button onclick="uploadImage()" class="btn btnbig btnnormal ">
+                    相册
+                </button>
+                <div class="line"></div>
+                <button onclick="takePhoto()" class="btn btnbig btnnormal  ">
+                    拍照
+                </button>
+            </div>
+            <button class="btn btnbig btnnormal mt10 heithree">
+                取消
+            </button>
+        </div>
+    </div>
+
+    <div id="swiperDiv" class="overlay hide" style="height:100%; z-index: 300;">
+        <div class="swiper-container swiper-container-horizontal ">
+            <div class="swiper-wrapper">
+            </div>
+            <div class="swiper-pagination"></div>
+        </div>
+    </div>
+
+    <script>
+        var id = request("id");
+        var mes_type_id = request("mes_type_id");
+        var uid = request("uid");
+        var uid_child = request("uid_child");
+        var school_id = request("school_id");
+        var user_type = request("user_type");
+        var is_now = request("is_now");
+        var date = request("date");
+        var class_id = request("class_id");
+        var ismypublished = request('ismypublished');
+        var obj_type = "";
+        var dateInfo = "";
+
+        if (strIsNullOrEmpty(school_id)) {
+            school_id = "0";
+        }
+
+        $(function () {
+            if (!strIsNullOrEmpty(type) && (type == "0" || type == "1")) {
+                $("#submit").hide();
+            }
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    bridge.registerHandler("showImage", function (data) { showImage(data); });
+                }, false);
+
+            }
+
+            $('.addimg').click(function () {
+                uploadImage();
+                //var hei_ = $(window).height();
+                //$('#uploadDiv').css('height', hei_);
+                //if ($('#uploadDiv').hasClass('hide')) {
+                //    $('#uploadDiv').removeClass('hide')
+                //}
+            })
+            $('.overlay').click(function () {
+                $('.overlay').addClass('hide');
+            })
+            $("#class_list").parent().hide();
+            $("#objs").parent().hide();
+            if (mes_type_id == "3") {
+                $("#div_obj").hide();
+                $("#txt_class").attr("placeholder", "请选择班级");
+            }
+
+            //var wheels = [];
+            //wheels[0] = { 'Hours': {} };
+            //wheels[1] = { 'Minutes': {} };
+            //for (var i = 0; i < 60; i++) {
+            //    if (i < 16) wheels[0]['Hours'][i] = (i < 10) ? ('0' + i) : i;
+            //    wheels[1]['Minutes'][i] = (i < 10) ? ('0' + i) : i;
+            //}
+            //$('#plan_time').scroller({
+            //    timeFormat: 'HH:ii:ss',
+            //    preset: 'datetime',
+            //    seconds: true,
+            //    ampm: false
+            //});
+
+            if (school_id == "0") {
+                //判断班级短信是否开启，若没有开启，则不能勾选推送短信的复选框
+
+                $.ajax({
+                    type: "get",
+                    async: false,
+                    url: domain + "api/HomeSchoolCommunication/ClassSmsIsOpen",
+                    data: {
+                        uid: uid,
+                        class_id: class_id,
+                        school_id: school_id
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        if (data.res != "1") {
+                            $("#mes").attr("disabled", true);
+                        }
+                    }
+                });
+            }
+
+
+            $("#submit").click(function () {
+                Filish();
+
+            });
+
+            var is_upd = false;
+            if (!strIsNullOrEmpty(id)) {
+                //编辑   加载数据
+                $.ajax({
+                    type: "get",
+                    async: false,
+                    url: domain + "api/HSCForImageURL/GetSendInfo",
+                    data: {
+                        id: id,
+                        is_now: is_now,
+                        user_type: user_type,
+                        uid: uid,
+                        class_id: null,
+                        uid_child: uid_child,
+                        message_type_name: ""
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+
+                        for (var i = 0; i < data.rows.length; i++) {
+                            if (data.rows[i].status != "0") {
+                                choicetwo("当前消息已审核，不能修改", "取消", function () {
+                                    var array = {
+                                        title: null,
+                                        url: null,
+                                        urlType: 0,
+                                        close: true,
+                                        children: []
+                                    };
+                                    appRedirect(array);
+                                }, "确定", function () {
+                                    var array = {
+                                        title: null,
+                                        url: null,
+                                        urlType: 0,
+                                        close: true,
+                                        children: []
+                                    };
+                                    appRedirect(array);
+                                });
+                            }
+                            else {
+                                obj_type = data.rows[i].obj_type;
+
+                                $("#title").val(data.rows[i].title);
+                                $("#txt_class").val(data.rows[i].class_names);
+                                $("#plan_time").val(convertDateTimeToString(parseISO8601(data.rows[i].get_date)));
+                                //$("#result").val(data.rows[i].mes_pic);
+                                var listStr = "";
+                                if (!strIsNullOrEmpty(data.rows[i].mes_pic)) {
+                                    if (data.rows[i].mes_pic.indexOf(',') >= 0) {
+                                        var imgs = data.rows[i].mes_pic.split(',');
+                                        for (var k = 0; k < imgs.length; k++) {
+                                            if (!strIsNullOrEmpty(imgs[k])) {
+                                                var imageName1 = imgs[k].substr(imgs[k].lastIndexOf("/") + 1);
+                                                if (imageName1.indexOf('oss-') == 0) {
+                                                    imageName1 = imageName1.substr(0, imageName1.indexOf('@'));
+                                                }
+                                                listStr += "<div class='image'><img imgName='" + imageName1 + "' src='" + imgs[k] + "' class='imgs' /><a href='javascript:;' onclick='deleteImage(this)'></a></div>";
+                                            }
+                                        }
+                                    }
+                                    else {
+                                        var imageName = data.rows[i].mes_pic.substr(data.rows[i].mes_pic.lastIndexOf("/") + 1);
+                                        if (imageName.indexOf('oss-') == 0) {
+                                            imageName = imageName.substr(0, imageName.indexOf('@'));
+                                        }
+                                        listStr += "<div class='image'><img imgName='" + imageName + "' src='" + data.rows[i].mes_pic + "' class='imgs'/><a href='javascript:;' onclick='deleteImage(this)'></a></div>";
+                                    }
+                                }
+                                $("#result").prepend(listStr);
+                                $(".imgs").click(function () {
+                                    bigimg($(this));
+                                });
+                                var chk_gen = "";
+                                var chk_teach = "";
+                                if (!(strIsNullOrEmpty(data.rows[i].group_names) && (obj_type == "0" || obj_type == "4"))) {
+                                    if (obj_type == "0" || obj_type == "2" || obj_type == "4" || obj_type == "6") {
+                                        chk_gen = "家长,";
+                                    }
+                                    if ((obj_type == "0" || obj_type == "1" || obj_type == "4" || obj_type == "5") && data.rows[i].group_count < 1) {
+                                        chk_teach = "老师";
+                                    }
+
+                                }
+                                $("#obj").val(chk_gen + (strIsNullOrEmpty(data.rows[i].group_names) ? "" : data.rows[i].group_names) + chk_teach);
+                                $("#context").val(data.rows[i].context);
+                                if (data.rows[i].mes == "1") {
+                                    $("#mes").attr("checked", true);
+                                }
+
+                                chk_class_ids = data.rows[i].class_ids;
+                                chk_group_ids = data.rows[i].group_ids;
+                                if ($('#result').find('div.image').length >= maxImage) {
+                                    $('#result').find('.addimg').hide();
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            else {
+                if (mes_type_id == "3") {
+                    $("#title").val("家庭作业");
+                }
+                else if (mes_type_id == "2") {
+                    var date = new Date();
+                    dateInfo = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " 通知";
+                    $("#title").val(dateInfo);
+                }
+            }
+            $("#title").focusin(function () {
+                //alert(1)
+                var obj = this;
+                var title = $("#title").val();
+
+                //setTimeout(function () {
+                //    obj.select();
+                //}, 10);
+                this.setSelectionRange(0, title.length);
+                if (mes_type_id == "3" && title == "家庭作业") {
+                    console.log('家庭作业 focus');
+                    setTimeout(function () {
+                        obj.select();
+                    }, 10);
+                }
+                else if (mes_type_id == "2" && title == dateInfo) {
+                    console.log('通知 focus');
+                    setTimeout(function () {
+                        obj.select();
+                    }, 10);
+                }
+            });
+
+            var class_list = selectClass(uid, user_type, school_id, true, class_id, mes_type_id);
+
+            if (chk_class_count > 0) {
+
+                if (chk_class_count > 1) { //多个班级才能筛选
+
+                    if (!strIsNullOrEmpty(type) && (type == "0" || type == "1")) {
+                        $("#txt_class").click(function () {
+                            var array = {
+                                title: '选择班级',
+                                url: "/HomeSchoolCommunication/dailyattendance/classes.html?mes_type_id=" + mes_type_id + "&uid=" + uid + "&school_id=" + school_id + "&class_id=" + class_id + "&chk_class_ids=" + chk_class_ids + "&chk_class_names=" + (chk_class_names.length > 10 ? subStr(chk_class_names, 10) : chk_class_names) + "&t=ma&id=" + id,
+                                urlType: 1,
+                                close: false,
+                                children: [
+                                    {
+                                        title: '完成',
+                                        url: 'ClassSel()',
+                                        urlType: 2,
+                                        childTitle: ''
+                                    }]
+                            };
+                            appRedirect(array);
+                        });
+                    }
+                    else {
+                        $("#txt_class").click(function () {
+                            $("#class_list").parent().show();
+                            $("#class_list").show();
+                            $("#objs").hide();
+                            $("#pageContext").hide();
+                            if (!strIsNullOrEmpty(uid) && !strIsNullOrEmpty(school_id)) {
+
+                                $("#class_list").html(class_list);
+                                gradeClassOption();
+
+                                $("#sel_class_ok").click(function () {
+                                    getClassSelValue();
+                                    $("#class_list").parent().hide();
+                                    $("#pageContext").show();
+                                    $("#txt_class").val(chk_class_names);
+                                });
+                            }
+                        });
+                    }
+                }
+                else {
+                    $("#class_list").html(class_list);
+                    getClassSelValue();
+                    $("#txt_class").val(chk_class_names);
+                    //$("#txt_class").hide();
+                }
+            }
+            else {
+                error("您没有班级！");
+            }
+
+            if (mes_type_id != "3") {
+
+                var group_list = selectGroup(school_id, uid, obj_type);
+                if (chk_group_count > 1) {
+
+                    if (!strIsNullOrEmpty(type) && (type == "0" || type == "1")) {
+                        $("#obj").click(function () {
+                            if (((has_teacher == 1 || !strIsNullOrEmpty(chk_group_ids)) && has_genearch == 1) || (strIsNullOrEmpty(chk_group_ids) && has_teacher != 1 && has_genearch != 1)) {
+                                obj_type = "4";
+                            }
+                            else if (has_genearch == 1) {
+                                obj_type = "2";
+                            }
+                            else if ((has_teacher == 1 || !strIsNullOrEmpty(chk_group_ids))) {
+                                obj_type = "1";
+                            }
+                            var array = {
+                                title: '选择对象',
+                                url: "/HomeSchoolCommunication/dailyattendance/objs.html?uid=" + uid + "&school_id=" + school_id + "&chk_group_ids=" + chk_group_ids + "&chk_group_names=" + chk_group_names + "&obj_type=" + obj_type + "&t=ma&id=" + id,
+                                urlType: 1,
+                                close: false,
+                                children: [
+                                    {
+                                        title: '完成',
+                                        url: 'ObjSel()',
+                                        urlType: 2,
+                                        childTitle: ''
+                                    }]
+                            };
+                            appRedirect(array);
+                        });
+
+                    }
+                    else {
+                        $("#objs").html(group_list);
+                        $("#obj").click(function () {
+                            if (((isChecked($("#teacher")) || !strIsNullOrEmpty(chk_group_ids)) && isChecked($("#genearch"))) || (strIsNullOrEmpty(chk_group_ids) && !isChecked($("#teacher")) && !isChecked($("#genearch")))) {
+                                obj_type = "4";
+                            }
+                            else if (isChecked($("#genearch"))) {
+                                obj_type = "2";
+                            }
+                            else if ((isChecked($("#teacher")) || !strIsNullOrEmpty(chk_group_ids))) {
+                                obj_type = "1";
+                            }
+                            $("#objs").parent().show();
+                            $("#class_list").hide();
+                            $("#objs").show();
+                            $("#pageContext").hide();
+                            if (!strIsNullOrEmpty(uid) && !strIsNullOrEmpty(school_id)) {
+
+                                groupOption();
+
+                                $("#sel_group_ok").click(function () {
+                                    getGroupSelValue();
+                                    $("#objs").parent().hide();
+                                    $("#pageContext").show();
+                                    $("#obj").val(chk_group_names);
+                                });
+                            }
+                        });
+                    }
+                }
+                else {
+                    $("#objs").html(group_list);
+                    $("#genearch").attr("checked", true);
+                    getGroupSelValue();
+                    $("#obj").val(chk_group_names);
+                    //$("#obj").hide();
+                }
+                //if (obj_type == "0" || obj_type == "2" || obj_type == "4" || obj_type == "6") {
+                //    $("#genearch").attr("checked", "checked");
+                //}
+                //if (obj_type == "0" || obj_type == "1" || obj_type == "4" || obj_type == "5") {
+                //    if ($("#teacher").length>0) {
+
+                //        $("#teacher").attr("checked", "checked");
+                //    }
+                //}
+            }
+        });
+        var couldSubmit = 1;
+        function Filish() {
+            $("#title").blur();
+            $("#context").blur();
+            if (couldSubmit == 1) {
+
+                var class_ids = chk_class_ids;
+                var title = $("#title").val();
+                var context = $("#context").val();
+                var pics = "";
+                var plan_time = $("#plan_time").val();
+                var obj = $("#obj").val();
+                var mes = isChecked($("#mes"));
+
+                $(".imgs").each(function () {
+                    var src = $(this).attr("imgName");
+                    if (!strIsNullOrEmpty(src)) {
+                        pics += src + " "
+                    }
+                });
+
+                if (mes_type_id != 3) {
+                    if (strIsNullOrEmpty(title)) {
+                        error("请填写标题");
+                        return;
+                    }
+                }
+                if (title.length > 30) {
+                    error("标题过长，请输入30字以内！");
+                    return;
+                }
+                if (!strIsNullOrEmpty(title) && strIsNullOrEmpty($.trim(title))) {
+                    error("标题不能只输入空格！");
+                    return;
+                }
+                if (strIsNullOrEmpty(context) && strIsNullOrEmpty(pics)) {
+                    error("请输入内容或上传图片");
+                    return;
+                }
+                if (context.length > 400) {
+                    error("内容过长，请输入400字以内！");
+                    return;
+                }
+                if (!strIsNullOrEmpty(context) && strIsNullOrEmpty($.trim(context))) {
+                    error("内容不能只输入空格！");
+                    return;
+                }
+                if (mes_type_id == 3) {
+                    if (strIsNullOrEmpty(class_ids)) {
+                        error("请选择班级");
+                        return;
+                    }
+                }
+                if (chk_class_isallchk == 1 && mes_type_id != 3) {
+                    class_ids = "";
+                }
+                var string_sender = "";
+                if (has_genearch == 1) {
+                    string_sender = "genearch,";
+                }
+                if (has_teacher == 1) {
+                    string_sender += "teacher,";
+                }
+
+                if (strIsNullOrEmpty(string_sender)) {
+                    string_sender = "genearch,teacher,";
+                }
+
+
+                $("#submit").attr("disabled", "disabled");
+                couldSubmit = 0;
+
+                pop('正在保存');
+                $.ajax({
+                    type: "post",
+                    async: true,
+                    url: domain + "api/HomeSchoolCommunication/MessageAdd",
+                    data: {
+                        id: id,
+                        message_type_id: mes_type_id,
+                        title: title,
+                        context: context,
+                        uid_send: uid,
+                        send_type: user_type,
+                        school_id: school_id,
+                        plan_time: plan_time,
+                        pic_mes: false,
+                        string_sender: string_sender,
+                        grade_ids: null,
+                        class_ids: class_ids,
+                        group_ids: strIsNullOrEmpty(chk_group_ids) ? "" : chk_group_ids,
+                        mes: mes,
+                        mesPic: pics
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        clearpop();
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+
+                        $("#submit").removeAttr("disabled");
+                        couldSubmit = 1;
+                    }, success: function (data) {
+                        clearpop();
+                        if (data.res > 0) {
+                            error("操作成功");
+                            var url = "";
+                            var title1 = "";
+                            if (strIsNullOrEmpty(id)) {
+                                if (mes_type_id == "3") {
+                                    url = "/HomeSchoolCommunication/homework/homeworklist.html?uid=" + uid + "&uid_child=" + uid_child + "&user_type=" + user_type + "&school_id=" + school_id + "&class_id=" + class_id + "&date=" + date + "&version=" + request("version");
+                                    title1 = "作业列表";
+                                }
+                                else if (mes_type_id == "2") {
+                                    url = "/HomeSchoolCommunication/notice/noticelist.html?uid=" + uid + "&uid_child=" + uid_child + "&user_type=" + user_type + "&school_id=" + school_id + "&class_id=" + class_id + "&date=" + date + "&version=" + request("version");
+                                    title1 = "通知列表";
+                                }
+                                else if (mes_type_id == "8") {
+                                    url = "/HomeSchoolCommunication/active/activelist.html?uid=" + uid + "&uid_child=" + uid_child + "&user_type=" + user_type + "&school_id=" + school_id + "&class_id=" + class_id + "&date=" + date + "&version=" + request("version");
+                                    title1 = "活动列表";
+                                }
+                            }
+                            else {
+                                url = '/HomeSchoolCommunication/messageDetail.html?id=' + data.res + "&is_now=" + is_now + "&user_type=" + user_type + "&uid=" + uid + "&uid_child=" + uid_child + "&class_id=" + class_id + "&message_type_id=" + mes_type_id + "&updated=1" + "&version=" + request("version") + '&ismypublished=' + ismypublished;
+                                if (mes_type_id == "3") {
+                                    title1 = "作业详情";
+                                }
+                                else if (mes_type_id == "2") {
+                                    title1 = "通知详情";
+                                }
+                                else if (mes_type_id == "8") {
+                                    title1 = "活动详情";
+                                }
+                            }
+                            deleteImgs(deleteStr);     //原有的被删除
+
+                            var picss = pics.split(' ');  //新加的被删除
+                            $.each(function (i, n) {
+                                var a = deleteStrNew.indexOf(n);
+                                if (a >= 0) {
+                                    deleteStrNew.remove(a);
+                                }
+                            });
+                            deleteImgs(deleteStrNew);
+
+                            if (type == "0") {
+                                //  surfaceView.clearPicturesUseless(JSON.stringify(deleteStrNew));
+                                bridge.callHandler('clearPicturesUseless', { imgs: deleteStrNew });
+                            }
+                            var array = {
+                                title: title1,
+                                url: url,
+                                urlType: 1,
+                                close: true,
+                                children: []
+                            };
+                            appRedirect(array);
+                        }
+                        else if (data.res == "-500") {
+                            $("#submit").removeAttr("disabled");
+                            couldSubmit = 1;
+
+
+                            dialogbox("您输入的内容中存在敏感字，是否处理？", function () {
+                                $("#title").val(data.title_new);
+                                $("#context").val(data.context_new);
+                            });
+                        }
+                        else if (data.res == "-1") {
+                            $("#submit").removeAttr("disabled");
+                            couldSubmit = 1;
+                            error("操作失败，没有收件人。");
+                        }
+                        else if (data.res == "-2") {
+                            $("#submit").removeAttr("disabled");
+                            couldSubmit = 1;
+                            error(data.res_mes);
+                        }
+                        else if (data.res == "-3") {
+                            $("#submit").removeAttr("disabled");
+                            couldSubmit = 1;
+
+
+                            choicetwo("当前消息已审核，不能修改", "取消", function () {
+                                var array = {
+                                    title: null,
+                                    url: null,
+                                    urlType: 0,
+                                    close: true,
+                                    children: []
+                                };
+                                appRedirect(array);
+                            }, "确定", function () {
+                                var array = {
+                                    title: null,
+                                    url: null,
+                                    urlType: 0,
+                                    close: true,
+                                    children: []
+                                };
+                                appRedirect(array);
+                            });
+                        }
+                        else {
+                            $("#submit").removeAttr("disabled");
+                            couldSubmit = 1;
+                            error("操作失败！");
+                        }
+                    }
+                });
+            }
+        }
+
+        //#region 选择图片
+        var uploadUrl = uploadMesImageUrl + (strIsNullOrEmpty(school_id) ? 0 : school_id);
+        var downloadUrl = downloadMesImageUrl + (strIsNullOrEmpty(school_id) ? 0 : school_id) + '/';
+        var maxImage = 9;
+        function uploadImage() {
+            var count = document.getElementsByClassName('image').length;
+            var reultCount = maxImage - count;
+            if (reultCount < 1) {
+                return;
+            }
+            if (type == "0") {
+                //surfaceView.selectImgForJS(reultCount, uploadUrl);
+                bridge.callHandler("selectImgForJS", { resultCount: reultCount, uploadUrl: uploadUrl, downloadUrl: downloadUrl, school_id: strIsNullOrEmpty(school_id) ? 0 : school_id });
+            }
+            else if (type == "1") {
+                bridge.send({
+                    selectImgForJS: {
+                        reultCount: reultCount,
+                        uploadUrl: uploadUrl,
+                        downloadUrl: downloadUrl,
+                        school_id: strIsNullOrEmpty(school_id) ? 0 : school_id
+                    }
+                });
+
+                //bridge.send({
+                //    selectImgForJS: reultCount
+                //});
+            }
+            else {
+                error('上传仅支持安卓和IOS！');
+                showImage('[{"extension":"asdf","name":"lasjdflajd", "base64String":"adfasdf"}]');
+            }
+        }
+        //拍照
+        function takePhoto() {
+            var count = document.getElementsByClassName('image').length;
+            var reultCount = maxImage - count;
+            if (reultCount < 1) {
+                return;
+            }
+            if (type == "0") {
+                // surfaceView.takePhotoForJS(reultCount, uploadUrl);
+                //surfaceView.takePhotoForJS(reultCount);
+                bridge.callHandler('takePhotoForJS', { reultCount: reultCount, uploadUrl: uploadUrl });
+            }
+            else if (type == "1") {
+                bridge.send({
+                    takePhotoForJS: {
+                        reultCount: reultCount,
+                        uploadUrl: uploadUrl
+                    }
+                });
+
+                //bridge.send({
+                //    reultCount: reultCount
+                //});
+            }
+            else {
+                error('拍照仅支持安卓和IOS！');
+            }
+        }
+
+        function showImage(data) {
+            var json = eval(data);
+            if (json != null && json.length > 0) {
+                var oFragment = document.createDocumentFragment();
+                for (var i = 0; i < json.length ; i++) {
+                    //var extension = json[i].extension;
+                    //var base64String = json[i].base64String;
+                    var name = json[i].name;
+                    var div = document.createElement('div');
+                    div.className = 'image';
+                    var img = document.createElement('img');
+                    img.className = 'imgs new';
+                    //img.src = 'data:image/' + extension + ';base64,' + base64String;
+                    img.src = getPicThumbnail('/upload_mes_img/' + (strIsNullOrEmpty(school_id) ? 0 : school_id) + '/', name);
+                    $(img).attr("imgName", name);
+                    $(img).click(function () {
+                        bigimg(this);
+                    });
+                    var a = document.createElement('a');
+                    var text = document.createTextNode('');
+                    a.appendChild(text);
+                    //$(a).click(function () { deleteImage(this); });
+                    //$(a).attr('href', 'javascript:;');
+                    a.setAttribute('href', 'javascript:;');
+                    if (window.addEventListener) {
+                        a.addEventListener('click', function (e) {
+                            deleteImage(e.target || e.srcElement);
+                        }, false);
+                    } else {
+                        a.attachEvent('onclick', function (e) {
+                            deleteImage(e.target || e.srcElement);
+                        }, false);
+                    }
+                    div.appendChild(img);
+                    div.appendChild(a);
+                    oFragment.appendChild(div);
+                    //var html = '<div class="image">'
+                    //            + '<img src="data:image/' + extension + ';base64,' + base64String + '"/>'
+                    //            + '<a onclick="deleteImage(this)">X</a></div>';
+                    //document.getElementById('result').innerHTML += html;
+
+                }
+                $('#result').find('.addimg').before(oFragment);
+                if ($('#result').find('div.image').length >= maxImage) {
+                    $('#result').find('.addimg').hide();
+                }
+                //document.getElementById('result').appendChild(oFragment);
+            }
+        }
+
+        var deleteStr = new Array();
+        var deleteStrNew = new Array();
+
+        function deleteImage(obj) {
+            var parent = obj.parentNode;
+            parent.parentNode.removeChild(parent);
+
+            if ($('#result').find('div.image').length < maxImage) {
+                $('#result').find('.addimg').show();
+            }
+            var img = $(parent).find(".imgs.new").eq(0).attr("src");
+            if (!strIsNullOrEmpty(img)) {
+                //deleteImageOnServer(img);
+
+                deleteStrNew.push(img.substr(img.lastIndexOf("/") + 1));
+            }
+            else {
+                var imgSrc = $(parent).find(".imgs").eq(0).attr("src");
+                deleteStr.push(imgSrc.substr(imgSrc.lastIndexOf("/") + 1));
+            }
+        }
+
+        function deleteImages() {
+
+            var imgs = new Array();
+            $(".imgs.new").each(function () {
+                var src = $(this).attr("src");
+                imgs.push(src.substr(src.lastIndexOf("/") + 1));
+            });
+            deleteImgs(imgs);
+            if (type == "0") {
+                //surfaceView.clearPicturesUseless(JSON.stringify(imgs));
+                bridge.callHandler('clearPicturesUseless', { imgs: imgs });
+            }
+        }
+        function deleteImageOnServer(imageNames) {
+            var imgs = new Array();
+            imgs.push(imageNames.substr(imageNames.lastIndexOf("/") + 1));
+            deleteImgs(imgs);
+        }
+
+        function deleteImgs(imgs) {
+
+            $.ajax({
+                type: "POST",
+                url: deleteMesImageUrl,
+                dataType: "json",
+                data: { "schoolId": school_id, "imgName": imgs },
+                //contentType: "application/json;",
+                success: function (data) {
+                    //alert(imgs.join(","));
+                    //alert(JSON.stringify(data,null,4));
+                }
+                ,
+                error: function (e) {
+                    //alert(JSON.stringify(e, null, 4));
+                }
+            });
+        }
+        //#endregion
+
+
+        function ClassSel(class_ids, names, isall) {
+            chk_class_ids = class_ids;
+            $("#txt_class").val(names);
+            chk_class_isallchk = isall;
+        }
+        function ObjSel(group_ids, names, has_gen, has_teach) {
+            chk_group_ids = group_ids;
+            $("#obj").val(names);
+            has_genearch = has_gen;
+            has_teacher = has_teach;
+        }
+        function bigimg(obj) {
+            if (type == "0" || type == "1") {
+
+                var imageUrls = [];
+
+                $("#result img").each(function (i, n) {
+                    var is_thum = false;
+                    var imgName = $(this).attr('imgName');
+                    if (imgName.indexOf("oss-1-") == 0) {
+                        is_thum = true;
+                    }
+                    if (is_thum) {
+                        imageUrls.push(getPicThumbnail('upload_mes_img/' + (strIsNullOrEmpty(school_id) ? 0 : school_id) + '/', imgName, "@50p"));
+                    } else {
+                        imageUrls.push(getPicBig('upload_mes_img/' + (strIsNullOrEmpty(school_id) ? 0 : school_id) + '/', imgName));
+                    }
+                });
+                var json = {
+                    index: $("#result img").index(obj),
+                    url: imageUrls
+                }
+                if (type == "1" || type == "0") {
+                    bridge.callHandler("showPicsDetail", json);
+                }
+            }
+            else {
+                var str = [];
+                $('#swiperDiv.overlay').show(400);
+
+                $("#result img").each(function (i, n) {
+                    var is_thum = false;
+                    var imgName = $(this).attr('imgName');
+                    if (imgName.indexOf("oss-1-") == 0) {
+                        is_thum = true;
+                    }
+                    if (is_thum) {
+                        str[i] = getPicThumbnail('/upload_mes_img/' + (strIsNullOrEmpty(school_id) ? 0 : school_id) + '/', imgName, "@50p");
+                    } else {
+                        str[i] = getPicBig('/upload_mes_img/' + (strIsNullOrEmpty(school_id) ? 0 : school_id) + '/', imgName);
+                    }
+                    console.log(str[i]);
+                });
+                var html = '';
+                for (var i = 0; i < str.length; i++) {
+                    html += '<div class="swiper-slide">';
+                    html += '<img src=" ' + str[i] + '">';
+                    html += '</div>';
+                }
+                $('.swiper-wrapper').append(html);
+                initswip($("#result img").index(obj));
+                $('#swiperDiv.overlay').click(function () {
+                    $('.swiper-wrapper').empty();
+                    $('swiperDiv.overlay').hide(400);
+                });
+            }
+
+        }
+
+        //时间选择控件
+        // time: 0, date:1, dateandtime:2
+        function selectDate(obj, datetype) {
+            var seldate = $(obj).val();
+            if (type == "1") {
+                bridge.callHandler("selectDatetime", { type: datetype, seldate: seldate }, function (data) {
+                    $(obj).val(data.dateTime);
+                });
+            }
+            else if (type == "0") {
+                var id = $(obj).attr('id');
+                // surfaceView.selectDatetime(datetype, seldate, id);
+                bridge.callHandler("selectDatetime", { type: datetype, seldate: seldate, id: id });
+            }
+        }
+
+        //设置时间
+        function setDate(id, data) {
+            $("#" + id).val(data);
+        }
+    </script>
+    <script src="../js/swiper.min.js"></script>
+    <script>
+        function initswip(index) {
+            var swiper = new Swiper('.swiper-container', {
+                pagination: '.swiper-pagination',
+                paginationClickable: true,
+                initialSlide: (!index || !isInt(index) ? 0 : index)
+            });
+        }
+        window.onscroll = function () {
+            //$('input').blur();
+            //$('textarea').blur();
+        }
+    </script>
+
+</body>
+</html>

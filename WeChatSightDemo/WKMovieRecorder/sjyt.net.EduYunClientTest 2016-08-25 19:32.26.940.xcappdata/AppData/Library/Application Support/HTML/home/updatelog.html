@@ -1,0 +1,174 @@
+﻿
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+    <title>更新日志</title>
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <style type="text/css">
+        html, body {
+            margin: 0px;
+            padding: 0px;
+            font-size: 14px;
+            color: #343434;
+            width: 100%;
+            background-color:rgb(240,239,244);
+        }
+        .logitem {
+         width:88%;
+         margin-left:4%;
+         padding:2%;
+         background-color:#fff;
+         border:1px solid #ddd;
+         border-radius:0.5rem;
+         margin-top:1rem;
+        }
+        .bb1 {
+         border-bottom:1px solid #ddd;
+        }
+        .icon {
+            width: 1.6rem;
+            margin-top: 0.7rem;
+        }
+        .loading {
+            padding: 4px 0px;
+            width: 100%;
+            text-align: center;
+        }
+        .wb {
+         display:-webkit-box;
+        }
+        .patb {
+         padding:0.3rem 0rem;
+        }
+        .widper80 {
+            width:80%;
+        }
+        .widper20 {
+            width:20%;
+        }
+        .break {
+         word-break:break-all;
+        }
+        .g-font {
+            color:#888;
+        }
+    </style>
+    <script>
+        var pageindex_ul = 1;
+        var pagesize_ul = 1;
+        var IsContinue_ul = true;
+        $(function () {
+            var hei_ = $(window).height();
+            $('.loadmore').css('min-height', hei_ + 10);
+
+            BindLog(pageindex_ul, pagesize_ul);
+        });
+        var BindLog = function (pi, ps) {
+            var mobiletype = request('type');
+            $.ajax({
+                type: "get",
+                async: false,
+                url: domain + "api/Home/GetUpdateLog",
+                data: {
+                    type: mobiletype,
+                    index: pi,
+                    size: ps,
+                    uid: strIsNullOrEmpty(request("uid")) ? 0 : request("uid")
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (json) {
+                    var tmpStr = "";
+                    if (json.total > 0) {
+                        IsContinue_ul = true;
+                        for (var i = 0; i < json.rows.length; i++) {
+                            //tmpStr += ' <div class="secondbgheader">' + json[i].title + '</div>';
+                            tmpStr += '<div class="logitem">';
+                            tmpStr += '<div class="bb1 wb patb">'
+                            tmpStr += '<div class="widper80"> <span class="bold" >' + json.rows[i].version + '</span><br/>';
+                            tmpStr += ' <span class="gray" >' + convertDateToString(parseISO8601(json.rows[i].update_date)) + '</span>';
+                            tmpStr += '</div>'
+                            tmpStr += '<div class=" widper20"  onclick="ctrof(this)" >+展开</div>';
+                            tmpStr += '</div>'
+                            tmpStr += '<div class="logcontent patb break g-font">' + json.rows[i].context + '</div>'
+                            tmpStr += '</div>';
+
+                        }
+                    }
+                    else {
+                        IsContinue_ul = false;
+                    }
+                    $("#divlog").append(tmpStr);
+                }
+            });
+        };
+        function ctrof(a) {
+            var this_ = $(a);
+            if (this_.hasClass('close')) {
+                this_.removeClass('close');
+                this_.parents('.logcontent').css('height', 'auto');
+                this_.addClass('open');
+                this_.text('-收起');
+            } else {
+                this_.addClass('close');
+                this_.removeClass('open');
+                this_.parents('.logcontent').css('height', '48px');
+                this_.text('+展开');
+            }
+        }
+        $(window).scroll(function () {
+            var scrollTop = $(this).scrollTop();
+            var scrollHeight = $(document).height();
+            var windowHeight = $(this).height();
+            if (scrollTop + windowHeight == scrollHeight) {
+                setTimeout(function () {
+                    $('.loading').fadeIn(200);
+                    additem();
+                    $('.loading').text('加载完毕');
+                    $('.loading').fadeOut(200);
+                }, 600)
+            }
+
+        })
+        function additem() {
+            //暂时只显示一条
+            //if (IsContinue_ul) {
+            //    pageindex_ul++;
+            //    BindLog(pageindex_ul, pagesize_ul);
+            //}
+
+
+            //var obj = '<div style="margin-top:14px;">' +
+            //          ' <span class="bold" >版本号</span><br/>' +
+            //          ' <span class="gray" >日期</span>' +
+            //          ' <div class="logcontent " >更新内容<div class="ctrol close" onclick="ctrof(this)">+展开</div></div>' +
+            //          '</div>';
+            //$('.loadmore').append(obj);
+        }
+    </script>
+</head>
+<body id="body">
+    <div id="divlog" class="loadmore">
+        <!--<div class="secondbgheader">
+            世纪守护更新日志
+        </div>
+        <div class="title">
+            1.日常考勤和宿舍考勤
+        </div>
+        <div class="content">
+            随时跟踪孩子考勤状况，掌握孩子动向
+        </div>
+        <div class="title">
+            2.定位功能
+        </div>
+        <div class="content">
+            家长和老师随时掌握孩子或学生的位置信息
+        </div>-->
+    </div>
+    <div class="loading"></div>
+</body>
+</html>

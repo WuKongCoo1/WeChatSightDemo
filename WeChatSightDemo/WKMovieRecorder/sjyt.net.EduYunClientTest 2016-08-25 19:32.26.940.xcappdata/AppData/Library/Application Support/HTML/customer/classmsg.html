@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>短信服务</title>
+    <link href="../css/commom.css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        var classid = request('class_ids');
+        var uid = request('uid');
+        $(document).ready(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            $("#btnbuy").hide();
+            $.get(domain + 'api/customer/GetClassSmsSetting', {
+                uid:uid,
+                classid: classid
+            }, function (json) {
+
+                if (!strIsNullOrEmpty(json.remain_sms_count)) {
+                    if (json.hasschool) {
+                        $("#remain_sms_count").html(json.remain_sms_count);
+                        $("#hasschool").show();
+                    }
+                    else {
+                        $("#remain_sms_count").html(json.remain_sms_count);
+                        $("#hasschool").hide();
+                    }
+                }
+                if (!strIsNullOrEmpty(json.amount)) {
+                    $("#amount").html(formatNumberRgx(json.amount));
+                }
+                if (json.canbuy) {
+                    $("#btnbuy").show();
+                }
+
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        });
+        function gobuy() {
+            var paramArray =
+             {
+                 title: '短信优惠包',
+                 url: '/mall/producttypedetail.html?product_type=6&uid=' + uid,
+                 urlType: 1,
+                 close: false,
+                 children: []
+             };
+            appRedirect(paramArray);
+        }
+    </script>
+</head>
+<body>
+    <div class="btnwhite  widper94 acenter mtonerem radius4 pab tcenter">
+        <div class="patb oneline">
+            <div class="g-font"> 剩余短信</div>
+            <div>
+                <span id="remain_sms_count" class="y-font p32"></span><span class="g-font">条</span>
+            </div>
+            <span id="hasschool" class="g-font">(校)</span>
+        </div>
+    </div>
+    <div class="g-font oneline acenter patb  widper95 mt10 p15 tcenter">
+        累计已使用短信<span id="amount" class="y-font p20"></span>  条
+    </div>
+    <input type="button" id="btnbuy" value="购买短信" class="btn btnbig btnwhite block acenter radius4 mt10" onclick="gobuy()" />
+</body>
+</html>

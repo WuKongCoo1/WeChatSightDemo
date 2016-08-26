@@ -1,0 +1,400 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>资讯详情</title>
+    <link href="../css/newsnormal.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script src="../js/newsnormal.js"></script>
+    <link href="../css/news.css" rel="stylesheet" />
+    <script src="../js/newsnormal.js"></script>
+    <script>
+        //var source = request("source");   // 0: 安卓；1：IOS；否则网页
+        var uid = request('uid');
+        var callbackurl = request('callbackurl');
+        var article_id = request("article_id");
+
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    var paramArray =
+                    {
+                        title: '资讯详情',
+                        children: [{
+                            title: '分享',
+                            icon: 'web_share_button',
+                            url: 'shareInformation()',
+                            urlType: 2,
+                            childTitle: ''
+                        }]
+                    };
+                    resetTitle(paramArray);
+                }, false);
+                $('.newsbody .detail').on('click', 'img', function () {
+                    var imageUrls = [];
+                    $(".newsbody .detail img").each(function (i, n) {
+                        imageUrls.push($(this).attr('src'));
+                    });
+                    var json = {
+                        index: $(".newsbody .detail img").index($(this)),
+                        url: imageUrls
+                    }
+                    bridge.callHandler("showPicsDetail", json);
+                });
+            }
+            //if (!strIsNullOrEmpty(uid)) {
+            //    var default_photo = getuserphoto(uid);
+            //    if (strIsNullOrEmpty(default_photo)) {
+            //        default_photo = "/Images/nopic.jpg";
+            //    }
+            //    $("#uidphoto").attr("uidphoto", default_photo);
+            //}
+            if (strIsNullOrEmpty(type)) {
+                //$('#btn_share').removeClass('hide');
+            }
+            $(".present").attr("article_id", article_id);
+            BindData();
+            var hei_ = $(window).height();
+            $('.commentdiv2').css('height', hei_);
+            //$('.detail img').attr("onerror", function() {
+            //    var src = $(this).attr('src');
+            //    if (src.indexOf(domain) == -1) {
+            //        $(this).attr('src', domain + src);
+            //    }
+            //});
+            $(".present").bind("click", function () { Save(); });
+            $(".commmit").bind("click", function () {
+                var context = $("#txtReply").val();
+                if (context == "") {
+                    return;
+                }
+
+                $.post("/News/ReplyComment",
+                    { article_id: article_id, comment: context, cid: "" },
+                    function (data) {
+                        if (data > 0) {
+                            $("#txtReply").val("");
+                        }
+                        else {
+                            location.href = $("#bodydiv").attr("nologinurl");
+                        }
+                    }).error(function (XMLHttpRequest, errorText, errorType) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    });
+            });
+            $('.bottom input').focus(function (e) {
+                var dhei_ = $(document).height();
+                $('body').scrollTop(dhei_);
+                document.addEventListener("touchmove", touchMove, false);
+            })
+            function touchMove(event) {
+                $('.bottom input').blur();
+            }
+        });
+
+        var BindData = function () {
+            $.ajax({
+                type: "get",
+                async: false,
+                url: domain + "api/news/GetDetailNew",
+                data: { article_id: article_id, uid: uid },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    clearpop();
+                    isSaving = 0;
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                },
+                success: function (json) {
+                    if (!strIsNullOrEmpty(json.rows)) {
+                        $(".detailtitle").html(json.rows.title);
+                        $("#span_publish_time").html(convertDateTimeToString(parseISO8601(json.rows.publish_time)));
+                        $("#div_context").html(json.rows.context.context);
+                        $(".hottip").html(json.total + " 条评论");
+                        $(".hottip").attr("total", json.total);
+                        if (json.rows.comment == "1") {
+                            $(".hottip").show();
+                            $(".bottom").show();
+                            $(".article_id").show();
+                        }
+                        //资讯封面图片
+                        //if (!strIsNullOrEmpty(json.rows.imgstr)) {
+                        //    $("#div_img").html("<img src='" + json.rows.imgstr + "' />");
+                        //    $("#div_img").show();
+                        //}
+
+                        //循环评论
+                        var comment_str = "";
+                        $.each(json.rows.commentList, function (i, n) {
+                            comment_str += '<div class="wb commentitem mt10">';
+                            comment_str += '<div class="head widper10" onclick="bighead(this)">';
+                            comment_str += '<img class="userhead" bigimg="' + n.operator_photo + '" onerror="onerror=null;src=\'../images/default-avatar.png\'"  src="' + (strIsNullOrEmpty(n.operator_photo) ? "../images/default-avatar.png" : n.operator_photo) + '" />';
+                            comment_str += '</div>';
+                            comment_str += '<div class="widper90">';
+                            comment_str += '<div class="widper100 wb">';
+                            comment_str += '<div class="widper38 nowap mlper3">' + n.operator_name + '</div>';
+                            comment_str += '<div class="gray widper54 tright"> ' + convertDateTimeToString(parseISO8601(n.comment_time)) + '</div>'
+                            comment_str += '</div>';
+                            comment_str += '<div class=" commentword gray">' + n.comment + '</div>';
+                            comment_str += '</div>';
+                            comment_str += '</div>';
+
+                        });
+                        if (!strIsNullOrEmpty(comment_str)) {
+                            $(".commentdiv").html(comment_str);
+                            $(".commentdiv").show();
+                            $(".tomorecom").css("display", "block");
+                            $(".showcommentdiv").removeClass("hide");
+                            $(".tomorecom").bind("click", function () {
+                                var paramArray =
+                                {
+                                    title: '评论列表',
+                                    url: '/news/comment.html?uid=' + uid + "&article_id=" + article_id,
+                                    urlType: 1,
+                                    close: false,
+                                    children: []
+                                };
+                                appRedirect(paramArray);
+                            });
+                        }
+
+                        $('img').bind('error', function () {
+                            var iserror = $(this).attr('iserror');
+                            if (iserror != 1) {
+                                var src = $(this).attr('src');
+                                $(this).attr('src', getPicBig(src.substr(src.indexOf("avatar/"), src.lastIndexOf("/") + 1), src.substr(src.lastIndexOf("/") + 1)));
+                                $(this).attr('iserror', 1);
+                            }
+                            else {
+                                $(this).attr('src', '../images/default-product.png');
+                                $(this).unbind('error');
+                            }
+                        });
+                        $(".loading").hide();
+                    }
+                }
+            });
+        };
+
+
+        function bighead(a) {
+            var hei_ = $(window).height();
+            var this_ = $(a)
+            var href_ = this_.find('img').attr('bigimg');
+            var imgobj = '<div class="overlay" style="display:block"><div style="height:50%;top:25%;position:absolute;left:0px;width:100%;overflow:hidden"><img onerror="onerror=null;src=\'../images/default-avatar.png\'" style="width:100%" src="' + href_ + '"/></div></div>';
+            $('body').append(imgobj);
+            $('.overlay').css('height', hei_);
+            $('.overlay').click(function () {
+                $('.overlay').remove();
+            })
+        }
+        var Save = function () {
+            var context = $("#txtComment").val();
+            if (context == "") {
+                return;
+            }
+
+            $.post(domain + 'api/news/ReplyComment',
+                { article_id: article_id, uid: uid, comment: context },
+                function (json) {
+                    if (json.res > 0) {
+                        hidecommentdiv();
+                        var comm_count = parseInt($(".hottip").attr("total"));
+                        $(".hottip").html((comm_count + 1) + " 条评论");
+                        $(".hottip").attr("total", comm_count + 1);
+                     
+                        $("#txtComment").val("");
+                        var operator_photo = getuserphoto(uid);
+                        var tmpStr = "";
+                        tmpStr += '<div class="commentdiv">';
+                        tmpStr += '<div class="docomment blue " cid="" style="display:none;">回复</div>';
+                        tmpStr += '<div class="wb commentitem">';
+                        tmpStr += '<div class="head" onclick="bighead(this)">';
+                        tmpStr += '<img class="userhead" bigimg="' + operator_photo + '" onerror="onerror=null;src=\'../images/default-avatar.png\'"  src="' + (strIsNullOrEmpty(operator_photo) ? "../images/default-avatar.png" : operator_photo) + '" />';
+                        tmpStr += '</div>';
+                        tmpStr += '<div class="widper90">';
+                        tmpStr += '<div class="widper100 wb">';
+                        tmpStr += '<div class="widper38 nowap mlper3">您</div>';
+                        tmpStr += '<div class="gray widper54 tright">刚刚</div>'
+                        tmpStr += '</div>';
+                        tmpStr += '<div class="commentword gray">' + context + '</div>';
+                        tmpStr += '</div>';
+                        tmpStr += '</div>';
+
+                        $(".relative").prepend(tmpStr);
+                    }
+                    else if (json.res == -1) {
+                        error("抱歉,请重新登录!");
+                        setTimeout(function () {
+                            //成功跳转页面
+                            location.href = "/";// "http://www.edu-yun.com";
+                        }, 3000);
+                    }
+                    else if (json.res == -2) {
+                        error("抱歉,内容中出现敏感词,请检查!");                   
+                    }
+                    else {
+                        error("抱歉,评论发表失败,请稍后重试!");
+                    }
+                }).error(function (XMLHttpRequest, errorText, errorType) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                });
+        };
+
+        function error(mes) {
+            var mes_ = mes;
+            var obj = '<div  class="error" style="position:fixed;background-color:rgba(45,45,45,.8);padding:6px 0px;width:56%;z-index:20000;display:none;text-align:center;color:#fafafa;top:50%;left:22%;border-radius:6px;"></div>';
+            $('body').append(obj);
+            $('.error').fadeIn(200).text(mes).delay(2000);
+            $('.error').fadeOut(200);
+        };
+
+        var replaceContent = function (content) {
+            $.get(domain + 'api/news/ReplyComment', {
+                content: content
+            }, function (json) {
+                $("#txtComment").val(json.res);
+            }).error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        };
+
+        var LinkFun = function (funname, title) {
+            if (funname.indexOf("(") <= 0) {
+                funname = "http://" + window.location.host + (funname.substr(0, 1) == "/" ? funname : "/" + funname);
+                if (!strIsNullOrEmpty(request("uid")))
+                    funname += "&uid=" + request("uid");
+                if (!strIsNullOrEmpty(request("source")))
+                    funname += "&source=" + request("source");
+                if (!strIsNullOrEmpty(request("school_id")))
+                    funname += "&school_id=" + request("school_id");
+            }
+            var arr =
+            {
+                url: funname,
+                title: title,
+                children: []
+            };
+
+            if (source == 0) {
+                bridge.callHandler('jsredirect', arr);
+            } else if (source == 1) {
+                jsredirect(arr);
+            } else {
+                if (funname.indexOf("(") > 0) {
+                    eval(funname);
+                } else {
+                    location.href = funname;
+                }
+            }
+        }
+
+        function shareInformation() {
+            var title = $(".detailtitle").html();
+            var body = subStr($.trim(removeHTMLTag($("#div_context").html())), 400);
+            if (type == 1 || type == 0) {
+                bridge.callHandler("shareInformation", {
+                    id: article_id,
+                    title: title,
+                    body: body,
+                    imageurl: $("#div_img img:eq(0)").attr('src')
+                }, function (data) { });
+            } else {
+                alert('title: ' + title + ', body: ' + body);
+            }
+        }
+    </script>
+    <style>
+        .newsbody {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            z-index: 20;
+            overflow-y: scroll;
+            padding-bottom: 60px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">加载中...</div>
+    <div class="newsbody" uidphoto="" id="uidphoto">
+        <div class=" mt10 widper96 acenter">
+            <button id="btn_share" class="hide" style="display:none">分享</button>
+            <div class="detailtitle"></div>
+            <div class="gray">
+                <span id="span_publish_time"></span>
+                <span class="ml10" style="display:none;"></span><br>
+            </div>
+            <div class="detail">
+                <div class="detail-a" id="div_img" style="display:none">
+                    <!--<img src="@ViewBag.imgUrl" />-->
+                </div>
+                <div id="div_context">
+
+                </div>
+            </div>
+            <div class="relative pt50" id="div_comment">
+                <div class="hottip" total="0" style="display:none;">0 条评论</div>
+
+                <div class="commentdiv" style="display:none;">
+
+                </div>
+            </div>
+            <a href="javascript:;" class="tomorecom widper100 " style="display:none;">点击查看更多评论</a>
+        </div>
+    </div>
+    <!--<div class="bottom " style="display:none">
+        <input type="text" placeholder="我也说两句" id="txtComment" />
+        <div class="present" article_id="">发表</div>
+    </div>-->
+    <div class="bottom mtr20 wb showcommentdiv hide">
+        <div class="comment ptl5 p14 g-font" onclick="showcommentdiv()">
+            我也说两句...
+        </div>
+        <!--<div class="newsshare ptl5 share">
+            <i></i>
+        </div>-->
+    </div>
+    <div class="overlay">
+    </div>
+    <div class="sharediv">
+        <div class="img-group wb box-center">
+            <div class="wb box-orient box-align">
+                <img src="../images/classicon.png">
+                <span class="p14">班级</span>
+            </div>
+            <div class="wb box-orient box-align">
+                <img src="../images/mygoodfriend.png">
+                <span class="p14">我的好友</span>
+            </div>
+            <div class="wb box-orient box-align">
+                <img src="../images/growingfootprint.png">
+                <span class="p14">成长足迹</span>
+            </div>
+        </div>
+        <div class="wb box-center">
+            <i class="s-close "></i>
+        </div>
+    </div>
+    <div class="commentdiv2">
+        <div class="wb mt10">
+            <div class="widper46 tleft mlper4 g-font" onclick="hidecommentdiv()">
+                取消
+            </div>
+            <div class="widper46 tright indent mrper4 y-font present">
+                回复
+            </div>
+        </div>
+        <textarea placeholder="我也说两句" id="txtComment" maxlength="800"></textarea>
+    </div>
+    <!--<div class="docomdiv" style="display:none">
+        <input type="text" placeholder="回复他" id="txtReply" />
+        <div class="commmit">回复</div>
+    </div>-->
+</body>
+</html>

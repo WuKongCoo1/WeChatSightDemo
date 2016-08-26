@@ -1,0 +1,310 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>购买包月服务</title>
+    <link href="../css/commom.css" rel="stylesheet" />
+
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        var childCount = 1;
+        var childs = [];
+        var uid = request('uid');
+        var classid = request('classid');
+        var monthCost = request('monthcost');
+        var uidchild = request('uidchild');
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            var windowWidth = $(window).width() - 1;
+            $('#chk_user_button').find('div').css({
+                'height': '45px',
+                'line-height': '45px',
+                'width': windowWidth / 2,
+                'text-align': 'center',
+                'border-top': '1px solid #ccc',
+                /*'border-bottom': '1px solid #ccc',*/
+                'color': '#00bfff'
+            });
+
+            $('#sp_month_cost').text('￥' + monthCost);
+            $('#sp_total').text('￥' + monthCost);
+            $.ajax({
+                type: 'get',
+                url: domain + 'api/customer/GetGenearchList',
+                async: false,
+                data: {
+                    uid: uid,
+                    classid: classid
+                },
+                dataType: 'json',
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (json) {
+                    childCount = json.total;
+                    var html = '';
+                    var selectedUid = [];
+                    var seltecedRealNames = [];
+                    $.each(json.rows, function (i, n) {
+                        childs.push({ uid_child: n.uid_child, real_name_child: n.real_name_child });
+                        if ((!strIsNullOrEmpty(uidchild) && uidchild == n.uid_child) || strIsNullOrEmpty(uidchild)) {
+                            selectedUid.push(n.uid_child);
+                            seltecedRealNames.push(n.uid_child == 0 ? n.real_name : n.real_name_child);
+                        }
+                        html += '<li>';
+                        html += '<label>';
+                        html += '<input type="checkbox" id="chk_uid_' + n.uid_child + '" value="' + n.uid_child + '" />';
+                        html += '<img src="" width="100" height="100" />';
+                        html += n.uid_child == 0 ? n.real_name : n.real_name_child;
+                        html += '</label>';
+                        html += '</li>';
+                    });
+                    $('#div_chk_user ul').html(html);
+                    $('#hdUidChild').val(selectedUid);
+                    if (selectedUid.length > 1) {
+                        $('#sp_total').text('￥' + monthCost * selectedUid.length);
+                    }
+                    $('#divSelectedUid span').text(seltecedRealNames);
+                }
+            });
+
+            $('.sp_quantity').click(function () {
+                var id = $(this).attr('id');
+                var quantity = parseInt($('#txt_quantity').val(), 10);
+                var newquantity = quantity;
+                var totalCost = monthCost;
+                if (id == 'sp_minus' && quantity > 1) {
+                    newquantity = quantity - 1;
+                    //$('#txt_quantity').val(quantity - childCount);
+                } else if (id == 'sp_plus') {
+                    newquantity = quantity + 1;;
+                    //$('#txt_quantity').val(quantity + childCount);
+                }
+                $('#txt_quantity').val(newquantity);
+                calculator();
+            });
+
+            if (childs.length > 1) {
+
+                $('.arrow').show();
+                $('#divSelectedUid').click(function () {
+                    if (!strIsNullOrEmpty(type) && (type == "0" || type == "1")) {
+                        var array = {
+                            title: '服务对象',
+                            url: '/customer/studentchoice.html?uid=' + uid + '&classid=' + classid + '&uidchilds=' + $('#divSelectedUid :hidden').val(),
+                            urlType: 1,
+                            close: false,
+                            children: []
+                        };
+                        appRedirect(array);
+                    } else {
+                        $('#div_chk_user :checkbox').removeAttr('checked');
+                        var uids = $('#hdUidChild').val();
+                        var checkedUid = strIsNullOrEmpty(uids) ? [] : uids.split(',');
+                        $.each(checkedUid, function (i, n) {
+                            $('#div_chk_user :checkbox[value=' + n + ']').prop('checked', 'checked');
+                        });
+
+                        var height = $(window).height();
+                        $('#div_chk_user').css({
+                            position: 'fixed',
+                            'background-color': '#fff',
+                            left: 0,
+                            top: 0,
+                            'z-index': 1000,
+                            width: '100%',
+                            height: height
+                        }).fadeIn('slow');
+                    }
+                });
+            }
+        });
+        function calculator() {
+            var newquantity = $('#txt_quantity').val();
+            if (!strIsNullOrEmpty(newquantity)) {
+                if (!isInt(newquantity) || parseInt(newquantity) <= 0 || parseInt(newquantity) > 100) {
+                    // error("请输入正确的数量");
+                    if (newquantity > 100) {
+                        $("#txt_quantity").val('100');
+                        newquantity = 100;
+                    }
+                    else {
+                        $("#txt_quantity").val('1');
+                        newquantity = 1;
+                    }
+                }
+            }
+            else {
+                $("#txt_quantity").val('1');
+                newquantity = 1;
+            }
+
+            var uids = $('#hdUidChild').val();
+            var checkedUids = strIsNullOrEmpty(uids) ? [] : uids.split(',');
+            var childCount = checkedUids.length == 0 ? 1 : checkedUids.length;
+            totalCost = monthCost * childCount * newquantity;
+            $('#sp_total').text(totalCost);
+        }
+        function buy() {
+            var quantity = $('#txt_quantity').val();
+            var uids = $('#hdUidChild').val();
+            var checkedUids = strIsNullOrEmpty(uids) ? [] : uids.split(',');
+            var childCount = checkedUids.length == 0 ? 1 : checkedUids.length;
+            var totalCost = monthCost * childCount * quantity;
+
+            pop('正在保存');
+            $.ajax({
+                url: domain + 'api/customer/BuyClassService',
+                type: 'POST',
+                data: {
+                    classid: classid,
+                    uid: uid,
+                    uidChilds: uids,
+                    quantity: quantity,
+                    payType: 1,
+                    totalCost: totalCost
+                },
+                dataType: 'json',
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    clearpop();
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                },
+                success: function (json) {
+                    clearpop();
+                    if (json.operationStatus == 1) {
+                        if (monthCost > 0) {
+                            var array = {
+                                title: '确认支付',
+                                url: '/mall/confirmorder.html?uid=' + uid + '&orderno=' + json.message,
+                                urlType: 1,
+                                close: false,
+                                isShut: true,
+                                children: []
+                            };
+                            appRedirect(array);
+
+                        }
+                    } else {
+                        error(json.message);
+                    }
+                }
+            });
+        }
+
+        function back() {
+            $('#div_chk_user').fadeOut('slow');
+        }
+
+        function checkUser() {
+            var checkedUid = [];
+            var checkedRealName = [];
+            $('#div_chk_user ul :checkbox:checked').each(function (i, n) {
+                checkedUid.push($(n).val());
+                checkedRealName.push($(n).parent().text());
+            });
+            if (checkedUid.length == 0) {
+                error('请至少选择一个服务对象');
+                return;
+            }
+            $('#divSelectedUid :hidden').val(checkedUid.toString());
+            $('#divSelectedUid span').text(checkedRealName.toString());
+            $('#div_chk_user').fadeOut('slow');
+            calculator();
+            //var quantity = parseInt($('#txt_quantity').val(), 10);
+
+            //var childCount = checkedUid.length == 0 ? 1 : checkedUid.length;
+            //var totalCost = monthCost * childCount * quantity;
+            //$('#sp_total').text(totalCost);
+
+        }
+
+        function setChildren(children) {
+            var quantity = parseInt($('#txt_quantity').val(), 10);
+            var json = eval(children);
+
+            var checkedUid = [];
+            var checkedRealName = [];
+            $.each(json, function (i, n) {
+                checkedUid.push(n.uid);
+                checkedRealName.push(n.realName);
+            });
+
+            $('#divSelectedUid :hidden').val(checkedUid.toString());
+            $('#divSelectedUid span').text(checkedRealName.toString());
+            calculator();
+            //var childCount = checkedUid.length == 0 ? 1 : checkedUid.length;
+            //var totalCost = monthCost * childCount * quantity;
+            //$('#sp_total').text(totalCost);
+        }
+    </script>
+</head>
+<body class="bgwhite pabfourrem">
+    <div class="widper100 bb1">
+        <div class="biggiftimg">
+            <img src="../images/monthservice.png" alt="班级包月服务" />
+        </div>
+    </div>
+    <div class="wb mtonerem palr">
+        <div class="widper60  ">班级包月服务</div>
+        <div class="widper40 tcenter">
+            <span class="y-font" id="sp_month_cost"></span>
+        </div>
+    </div>
+    <div class="mlper6 bgitem wb oneline widper95">
+        <div class="widper40">
+            购买数量
+        </div>
+        <div class="widper60 tright relative ">
+            <span id="sp_minus" class="sp_quantity minus reduce block">-</span><input type="number" class="mrthreerem buycount" oninput="calculator()" id="txt_quantity" value="1" /><span id="sp_plus" class="sp_quantity plus add block">+</span>
+        </div>
+    </div>
+    <div class=" mlper6 bgitem wb oneline widper95">
+        <div>
+            服务对象
+        </div>
+        <div id="divSelectedUid" class="widper60">
+            <input type="hidden" id="hdUidChild" />
+            <span class="mlonerem y-font block nowrap"></span>
+        </div>
+        <div class="widper20 tright hide arrow">
+            <img src="../images/next.png" class="icon" />
+        </div>
+    </div>
+    <div class="mlper6 bgitem wb oneline last widper95">
+        服务描述
+    </div>
+    <!--<div>
+        <label>支付方式</label>
+        <br />
+        <label><input type="radio" name="rbtn_pay_type" value="5" />爱心币</label>
+        <br />
+        <label><input type="radio" name="rbtn_pay_type" value="1" checked="checked" />支付宝</label>
+        <br />
+        <label><input type="radio" name="rbtn_pay_type" value="2" />网银</label>
+
+    </div>-->
+    <div class="bottom wb">
+        <div class="widper70 y-font tcenter p26">
+            应支付：<span id="sp_total"></span>
+        </div>
+        <div class="widper30">
+            <button id="btnSave" onclick="buy()" type="button" class="btnblock widper100 ">去付款</button>
+        </div>
+    </div>
+    <div id="div_chk_user" style="display: none;">
+        <ul></ul>
+        <div id="chk_user_button" style="position: fixed; bottom: 0; left: 0">
+            <div style="cursor: pointer; float: left; border-right: 1px solid #ccc;" onclick="back();">取消</div>
+            <div style="cursor: pointer; float: left;" onclick="checkUser();">确定</div>
+        </div>
+    </div>
+</body>
+</html>

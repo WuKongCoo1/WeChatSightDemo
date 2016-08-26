@@ -1,0 +1,348 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>选择联系人</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script type="text/javascript">
+        var uid = request('uid');
+        var callbackurl = request('callbackurl');
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            if ($('.contact_nav.selected').length == 0) {
+                $('.contact_nav:eq(0)').addClass('selected');
+            }
+            bindUser($('.contact_nav.selected'));
+            $('.contact_nav').click(function () {
+                if (!$(this).hasClass('selected')) {
+                    $('.contact_nav').removeClass('selected');
+                    $('.contact_nav').addClass('unselect');
+                    $(this).addClass('selected');
+                    bindUser(this);
+                }
+            });
+
+            //全选/取消所有群聊联系人
+            $('#chk_all_room').click(function () {
+                if ($(this).is(':checked')) {
+                    $('#chatroomlist').find(':checkbox').prop('checked', 'checked');
+                } else {
+                    $('#chatroomlist').find(':checkbox').removeAttr('checked');
+                }
+            });
+
+            //全选/取消所有我的好友
+            $('#chk_all_friend').click(function () {
+                if ($(this).is(':checked')) {
+                    $('#friendlist').find(':checkbox').prop('checked', 'checked');
+                } else {
+                    $('#friendlist').find(':checkbox').removeAttr('checked');
+                }
+            });
+
+            //全选/取消所有家人
+            $('#chk_all_family').click(function () {
+                if ($(this).is(':checked')) {
+                    $('#familylist').find(':checkbox').prop('checked', 'checked');
+                } else {
+                    $('#familylist').find(':checkbox').removeAttr('checked');
+                }
+            });
+        });
+
+        //全选/取消班级成员
+        function chkAllRoomUser(obj) {
+            var roomChecked = $(obj).is(':checked');
+            var classId = $(obj).val();
+            if (roomChecked) {
+                $('#ul_room_user_' + classId).find(':checkbox').prop('checked', 'checked');
+            } else {
+                $('#ul_room_user_' + classId).find(':checkbox').removeAttr('checked');
+            }
+
+            chkAllRoom();
+        }
+
+        //选择/取消群聊成员
+        function chkRoomUser(obj) {
+            var classId = $(obj).attr('classId');
+            var allRoomUser = $(':checkbox.chk_room_user[classId="' + classId + '"]').length;
+            var allCheckedRoomUser = $(':checkbox.chk_room_user[classId="' + classId + '"]:checked').length;
+            if (allRoomUser > 0 && allRoomUser == allCheckedRoomUser) {
+                $(':checkbox.chk_room[value="' + classId + '"]').prop('checked', 'checked');
+            } else {
+                $(':checkbox.chk_room[value="' + classId + '"]').removeAttr('checked');
+            }
+            chkAllRoom();
+        }
+
+        //判断是否全选所有聊天室成员
+        function chkAllRoom() {
+            var allRoom = $(':checkbox.chk_room').length;
+            var allCheckedRoom = $(':checkbox.chk_room:checked').length;
+            if (allRoom > 0 && allRoom == allCheckedRoom) {
+                $('#chk_all_room').prop('checked', 'checked');
+            } else {
+                $('#chk_all_room').removeAttr('checked');
+            }
+        }
+
+        //选择/取消我的好友
+        function chkFriend() {
+            var allFriend = $(':checkbox.chk_friend').length;
+            var allCheckedFriend = $(':checkbox.chk_friend:checked').length;
+            if (allFriend > 0 && allCheckedFriend == allFriend) {
+                $('#chk_all_friend').prop('checked', 'checked');
+            } else {
+                $('#chk_all_friend').removeAttr('checked');
+            }
+        }
+
+        //选择/取消家人
+        function chkFamily() {
+            var allFamily = $(':checkbox.chk_family').length;
+            var allCheckedFamily = $(':checkbox.chk_family:checked').length;
+            if (allFamily > 0 && allCheckedFamily == allFamily) {
+                $('#chk_all_family').prop('checked', 'checked');
+            } else {
+                $('#chk_all_family').removeAttr('checked');
+            }
+        }
+
+        function bindUser(obj) {
+            $('.datalist').hide();
+            var datalistid = $(obj).find('a').attr('refer');
+            $('#' + datalistid).show();
+            if (datalistid == 'chatroomlist' && $('#' + datalistid).find('ul').children().length == 0) {    //绑定班级列表
+                bindChatRoom();
+            } else if (datalistid == 'friendlist' && $('#' + datalistid).find('ul').children().length == 0) {    //绑定好友列表
+                bindFriend();
+            } else if (datalistid == 'familylist' && $('#' + datalistid).find('ul').children().length == 0) {    //绑定家人列表
+                bindFamily();
+            }
+        }
+
+        function bindChatRoom() {
+            $.get(domain + 'api/mall/GetChatRoomList', {
+                uid: uid
+            }, function (json) {
+                var html = '';
+                if (json.rows.length == 0) {
+                    html = '<div>暂无数据</div>';
+                } else {
+                    $.each(json.rows, function (i, n) {
+                        html += '<li>';
+                        html += '<div id="div_class_' + n.class_id + '" onclick="bindChatRoomUser(' + n.class_id + ')">';
+                        html += '<input type="checkbox" value="' + n.class_id + '" class="chk_room" onclick="chkAllRoomUser(this);"/><label>' + n.name + '</label>';
+                        html += '</div>';
+                        html += '</li>';
+                    });
+                }
+                $('#chatroomlist ul').append(html);
+                $('#chatroomlist div.loading').hide();
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function bindChatRoomUser(classId) {
+            if (!$('#div_class_' + classId).nextAll().length == 0) {
+                return;
+            }
+            $('#div_class_' + classId).after('<div class="loading">加载中...</div>');
+            $.get(domain + 'api/mall/GetChatRoomUserList?uid=' + uid + '&classId=' + classId, {
+
+            }, function (json) {
+                var html = '';
+                if (json.rows.length == 0) {
+                    html = '<div>暂无数据</div>';
+                } else {
+                    var roomChecked = $(':checkbox.chk_room[value=' + classId + ']').is(':checked');
+                    html += '<ul class="room_user" id="ul_room_user_' + classId + '">';
+                    $.each(json.rows, function (i, n) {
+                        if (n.uid != uid) {
+                            html += '<li>';
+                            html += '<label><input type="checkbox" value="' + n.uid + '" ' + (roomChecked ? 'checked="checked"' : '') + ' classId="' + classId + '" class="chk_room_user" onclick="chkRoomUser(this)"/>' + (n.group_card != null ? n.group_card : (n.nick_name != null) ? n.nick_name : n.real_name) + '</label>';
+                            html += '</li>';
+                        }
+                    });
+                    html += '</ul>';
+                }
+                $('#div_class_' + classId).next('div.loading').remove();
+                $('#div_class_' + classId).after(html);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function bindFriend() {
+            $.get(domain + 'api/mall/GetFriendList', {
+                uid: uid
+            }, function (json) {
+                var html = '';
+                if (json.rows.length == 0) {
+                    html = '<div>暂无数据</div>';
+                } else {
+                    $.each(json.rows, function (i, n) {
+                        html += '<li>';
+                        html += '<label><input type="checkbox" value="' + n.uid + '" class="chk_friend" onclick="chkFriend()"/>' + (n.nick_name != null ? n.nick_name : n.real_name) + '</label>';
+                        html += '</li>';
+                    });
+                }
+                $('#friendlist ul').append(html);
+                $('#friendlist div.loading').hide();
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function bindFamily() {
+
+        }
+        //搜索群聊联系人
+        function searchRoomUser(obj) {
+            var keyword = $.trim($(obj).val());
+            if (keyword.length == 0) {
+                $('#chatroomlist ul li').show();
+            } else {
+                $('#chatroomlist ul li').hide();
+                $('#chatroomlist>ul>li').each(function (i, room) {
+                    var classId = $(room).find(':checkbox.chk_room').val();
+                    var roomName = $(room).find('div[id^=div_class_] label').text();
+                    var roomShow = false;
+                    var allUserShow = false;
+                    if (classId.indexOf(keyword) >= 0 || roomName.indexOf(keyword) >= 0) {
+                        roomShow = true;
+                        allUserShow = true;
+                    }
+                    if (!allUserShow) {
+                        $(room).find('ul>li').each(function (j, user) {
+                            var name = $(user).find('label').text();
+                            var uid = $(user).find('label :checkbox').val();
+                            if (name.indexOf(keyword) >= 0 || uid.indexOf(keyword) >= 0) {
+                                $(user).show();
+                                if (!roomShow) {
+                                    roomShow = true;
+                                }
+                            }
+                        });
+                    }
+                    if (roomShow) {
+                        $(room).show();
+                        if (allUserShow)
+                            $(room).find('ul>li').show();
+                    }
+                });
+            }
+        }
+        //搜索我的好友
+        function searchFriend(obj) {
+            var keyword = $.trim($(obj).val());
+            if (keyword.length == 0) {
+                $('#friendlist ul li').show();
+            } else {
+                $('#friendlist ul li').hide();
+                $('#friendlist ul li').each(function () {
+                    var name = $(this).find('label').text();
+                    var uid = $(this).find('label :checkbox').val();
+                    if (name.indexOf(keyword) >= 0 || uid.indexOf(keyword) >= 0) {
+                        $(this).show();
+                    }
+                });
+            }
+        }
+
+        function selectedUser() {
+            var uids = [];
+            var realNames = [];
+            //群聊联系人
+            $(':checkbox.chk_room_user:visible:checked').each(function () {
+                var uid = $(this).val();
+                if ($.inArray(uid, uids) < 0) {
+                    uids.push(uid);
+                    realNames.push($(this).parent().text());
+                }
+            });
+            //我的好友
+            $(':checkbox.chk_friend:visible:checked').each(function () {
+                var uid = $(this).val();
+                if ($.inArray(uid, uids) < 0) {
+                    uids.push(uid);
+                    realNames.push($(this).parent().text());
+                }
+            });
+            //我的家人
+            $(':checkbox.chk_family:visible:checked').each(function () {
+                var uid = $(this).val();
+                if ($.inArray(uid, uids) < 0) {
+                    uids.push(uid);
+                    realNames.push($(this).parent().text());
+                }
+            });
+            if (uids.length == 0) {
+                error('请选择联系人');
+                return;
+            }
+            if (!strIsNullOrEmpty(callbackurl)) {
+                callbackurl = decodeURIComponent(callbackurl);
+                if (callbackurl.indexOf('receive_uids') >= 0) {
+                    callbackurl = callbackurl.replace(/&receive_uids.*/, '');
+                }
+                var array = {
+                    title: callbackurl.indexOf('productdetail.html') > 0 ? '产品详情' : '赠送礼物',
+                    url: callbackurl + (callbackurl.indexOf('?') < 0 ? '?' : '&') + 'receive_uids=' + uids.toString() + '&receive_names=' + realNames.toString(),
+                    urlType: 1,
+                    close: true,
+                    children: [
+                        {
+                            title: '我的订单',
+                            url: 'orderlist.html?uid=' + uid,
+                            urlType: '1',
+                            childTitle: '我的订单'
+                        }
+                    ]
+                };
+                appRedirect(array);
+            } else {
+                error(uids.toString() + '|' + realNames.toString());
+            }
+        }
+    </script>
+</head>
+<body>
+    <button type="button" onclick="selectedUser()">完成</button>
+    <div class="tabdiv tab wb widper90 tcenter">
+        <div id="tab_class" class="contact_nav widthree selected"><a refer="chatroomlist" href="javascript:void(0)">群聊联系人</a></div>
+        <div id="tab_friend" class="contact_nav widthree unselect"><a refer="friendlist" href="javascript:void(0)">我的好友</a></div>
+        <div id="tab_family" class="contact_nav widthree  unselect"><a refer="familylist" href="javascript:void(0)">家人</a></div>
+        <div class="clear"></div>
+    </div>
+    <div id="chatroomlist" class="datalist">
+        <input type="text" placeholder="搜索" id="txt_searchRoomUser" onkeyup="searchRoomUser(this)" />
+        <label style="display:none;"><input type="checkbox" id="chk_all_room" />全选</label>
+        <ul id="" class="clearfix loadmore"></ul>
+        <div class="loading">加载中...</div>
+    </div>
+    <div id="friendlist" class="datalist">
+        <input type="text" placeholder="搜索" id="txt_searchFriend" onkeyup="searchFriend(this)" />
+        <br />
+        <label><input type="checkbox" id="chk_all_friend" />全选</label>
+        <ul id="" class="clearfix loadmore"></ul>
+        <div class="loading">加载中...</div>
+    </div>
+    <div id="familylist" class="datalist">
+        <label><input type="checkbox" id="chk_all_family" />全选</label>
+        <ul id="" class="clearfix loadmore"></ul>
+        <div class="loading">加载中...</div>
+    </div>
+</body>
+</html>

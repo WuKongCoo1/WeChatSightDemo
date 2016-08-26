@@ -1,0 +1,278 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>产品详细</title>
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js?d=989899"></script>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script type="text/javascript">
+        var product_id = request('product_id');
+        //var receive_ids = request('receive_ids');
+        //var receive_names = request('receive_names');
+        var uid = request('uid');
+        var from_type = request('from_type');
+        var original_id = request('original_id');
+
+        $(document).ready(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+                $(document).on('click', '.detail img', function () {
+                    var imageUrls = [];
+                    $(".detail img").each(function (i, n) {
+                        imageUrls.push($(this).attr('src'));
+                    });
+                    var json = {
+                        index: $(".detail img").index($(this)),
+                        url: imageUrls
+                    }
+                    bridge.callHandler("showPicsDetail", json);
+                });
+            }
+            bind();
+        });
+        //数据绑定
+        function bind() {
+            var post_url = domain + "api/mall/GetProductDetailNew";
+            $.ajax({
+                url: post_url,
+                data: {
+                    product_id: product_id,
+                    uid: uid
+                },
+                async: false,
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (data) {
+                    var html = "";
+                    var obj = data.rows;
+                    var paymoney = 0;
+                    var paytype = "";
+                    html += '<div class="pabonerem bgwhite ">';
+                    html += '<div class="widper100 bb1">';
+                    html += '<div id="detailimg" class="biggiftimg"><img src="' + (strIsNullOrEmpty(obj.product_img) ? '../images/default-product.png' : obj.product_img) + '" alt="产品详细图片" />';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<div class="wb mtonerem palr">'
+                    html += '<div class="widper60 bold  ">' + obj.name;
+                    html += '</div>';
+
+                    html += '<div class="widper40 tcenter ">';
+
+                    if (!strIsNullOrEmpty(obj.price_type) && obj.price_type.indexOf("1") != -1) {
+                        html += '<span class=" y-font bold"> ' + obj.discount_score + '积分 </span>';
+                    }
+                    else {
+                        html += '<span class="y-font">￥</span><span class=" y-font bold"> ' + obj.product_price.toFixed(2) + '</span>';
+                    }
+
+                    html += '</div>'
+                    html += '</div>'
+                    // paymoney = obj.product_price;
+                    if (!strIsNullOrEmpty(obj.detail)) {
+                        html += '<div class="mtonerem palr">产品详情';
+                        html += '<div class="g-font c-line detail ">' + obj.detail + '</div></div>';
+                    }
+                    if (obj.is_instalment) {
+                        html += '<div class="mtonerem palr" onclick="knowinstalment()"> (该商品支持合约购买)  <span class="y-font"> 了解合约购买</span></div>';
+                    }
+                    // $("#hidprice").val(paymoney);
+                    html += '</div>'
+                    if (obj.is_sell) {
+                        html += '<div class="tright bottom">'
+                        //实物商品
+                        if (obj.product_attr == "1" || obj.product_attr == "9") {
+
+                            html += '<input type="button" class="tinybtn btnwhite " onclick="give(' + obj.id + ')" value="立即赠送" /> <input class="tinybtn btnwhite " type="button" onclick="buy(' + obj.id + ')" value="立即购买" />';
+                        }
+                        else if (obj.product_attr == "2")  //虚拟
+                        {
+                            html += '<input type="button" class="tinybtn btnwhite " onclick="give(' + obj.id + ')" value="立即赠送" />';
+                        }
+                        else if (obj.product_attr == "3")  //积分
+                        {
+                            html += ' <div class="tcenter"><input type="button" class="btn btnbig btnwhite" onclick="buy(' + obj.id + ')" value="立即购买" /></div>';
+                        }
+                        html += '</div>'
+                    }
+                    $("#pdetail").append(html);
+
+                    $('img').bind('error', function () {
+                        //var iserror = $(this).attr('iserror');
+                        //if (iserror != 1) {
+                        //    var src = $(this).attr('src');
+                        //    $(this).attr('src', getPicBig("upload_product_img/1/", src.substr(src.lastIndexOf("/") + 1)));
+                        //    $(this).attr('iserror', 1);
+                        //}
+                        //else {
+                        $(this).attr('src', '../images/default-product.png');
+                        $(this).unbind('error');
+                        // }
+                    })
+
+                }
+            });
+        }
+        //加载产品图片
+        function detailimg(obj, defaultimg) {
+            if (!strIsNullOrEmpty(obj) && obj.length > 1) {
+                try {
+                    //1-1989097687.jpg,11359649035.png,;thumbnail_1-1989097687.jpg,thumbnail_11359649035.png,
+                    var names = obj.split(';');
+                    var imanames = names[0].split(',');
+                    var imghtml = "";
+                    for (var i = 0; i < imanames.length - 1; i++) {
+                        imghtml += '<img src="' + imanames[i] + '" alt="产品详细图片" />';
+                    }
+                    return imghtml;
+                }
+                catch (e) {
+                    return "";
+                }
+            }
+            else {
+                if (!strIsNullOrEmpty(defaultimg)) {
+                    return '<img src="' + defaultimg + '" alt="产品详细图片" />';
+                }
+                else {
+
+                    return '<img src="../images/default-product.png" alt="系统默认图片" />';
+                }
+
+            }
+
+        }
+        //数量改变
+        //function changeprice() {
+        //    var quantity = $("#txtcount").val();
+        //    var price = $("#hidprice").val();
+        //    var receives = $("#hidreceiveuids").val().split(',').length;
+        //    if (quantity == "") {
+        //        quantity = 0;
+        //    }
+        //    if (quantity != "" && !isInt(quantity)) {
+        //        error("请输入正确的数量");
+        //        $("#txtcount").val('1');
+        //        quantity = 1;
+        //    }
+
+        //    var payprice = parseFloat(price) * parseInt(quantity) * receives;
+        //    $("#paymoney").text(payprice);
+        //}
+        //实物商品购买
+        function buy(id) {
+
+            $.get(domain + 'api/mall/GetProductExist', {
+                product_id: id
+            }, function (json) {
+                if (json.res) {
+                    var paramArray =
+                    {
+                        title: '填写订单',
+                        url: '/mall/createorder.html?product_id=' + id + '&uid=' + uid,
+                        urlType: 1,
+                        close: false,
+                        isShut: true,
+                        children: []
+                    };
+                    appRedirect(paramArray);
+                }
+                else {
+                    choiceone("此商品暂停销售", "关闭", function () {
+                        var paramArray =
+                           {
+                               title: '世纪商城',
+                               url: '/mall/productlist.html?uid=' + uid,
+                               urlType: 1,
+                               close: true,
+                               children: []
+                           };
+                        appRedirect(paramArray);
+                    });
+                }
+            }).error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+
+
+        }
+        //实物商品赠送
+        function give(id) {
+            $.get(domain + 'api/mall/GetProductExist', {
+                product_id: id
+            }, function (json) {
+                if (json.res) {
+                    var paramArray =
+                    {
+                        title: '填写订单',
+                        url: '/mall/givepresent.html?product_id=' + id + '&uid=' + uid,
+                        urlType: 1,
+                        close: false,
+                        isShut: true,
+                        children: []
+                    };
+                    appRedirect(paramArray);
+                }
+                else {
+                    choiceone("此商品暂停销售", "关闭", function () {
+                        var paramArray =
+                           {
+                               title: '世纪商城',
+                               url: '/mall/productlist.html?uid=' + uid,
+                               urlType: 1,
+                               close: true,
+                               children: []
+                           };
+                        appRedirect(paramArray);
+                    });
+                }
+            }).error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+
+        }
+
+        //选择赠送人
+        function selectReceiveUser() {
+            var callbackurl = "/mall/productdetail.html" + window.location.search;
+            var paramArray =
+            {
+                title: '选择赠送人',
+                url: '/mall/contact.html?uid=' + uid + '&callbackurl=' + encodeURIComponent(callbackurl),
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(paramArray);
+        }
+
+        function knowinstalment() {
+            var callbackurl = "/mall/productdetail.html" + window.location.search;
+            var paramArray =
+            {
+                title: '分期付款规则',
+                url: '/mall/instalmentrule.html?callbackurl=' + encodeURIComponent(callbackurl),
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(paramArray);
+        }
+
+    </script>
+</head>
+<body class="pabthreerem">
+    <div id="pdetail">
+    </div>
+
+    <input type="hidden" id="hidpaytype" />
+    <input type="hidden" id="hidreceiveuids" />
+    <input type="hidden" id="hidprice" />
+</body>
+</html>

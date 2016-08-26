@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>钱包管理</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        var uid = request("uid");
+
+        $(document).ready(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            $.get(domain + 'api/customer/CheckHasPwd', {
+                uid: uid
+            }, function (json) {
+                if (json.flag == "true") {
+                    $(".haspwd").show();
+                } else {
+                    $(".nopwd").show();
+                }
+            }, 'json');
+        });
+
+
+        function UseRecord() {
+            var array = {
+                title: '钱包明细',
+                url: '/customer/idealMoneyUseRecord.html?uid=' + uid,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+        function UpdatePwd() {
+            var callbackurl = "/customer/manageidealmoney.html" + window.location.search;
+            var array = {
+                title: '修改密码',
+                url: '/customer/updatePwd.html?uid=' + uid + '&position=manage&callbackurl=' + encodeURIComponent(callbackurl),
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+        function ForgetPwd() {
+            var array = {
+                title: '忘记支付密码',
+                url: '/customer/forgetPwd.html?uid=' + uid,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+        function SetPwd() {
+            var callbackurl = "/customer/manageidealmoney.html" + window.location.search;
+            var array = {
+                title: '设置支付密码',
+                url: '/customer/updatePwd.html?uid=' + uid + '&position=manage&isfirst=true&callbackurl=' + encodeURIComponent(callbackurl),
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+    </script>
+</head>
+<body>
+    <div class="bgblock mtonerem">
+        <div class="haspwd widper100" style="display:none">
+            <div class="bgitem mlper6  oneline wb">
+                <div class="widper10">
+                    <img class="icon" src="../images/confirmcode.png" />
+                </div>
+                <div class="widper80 indentb">
+                    <a href="javascript:void(0);" class="block full" onclick="UpdatePwd();">修改支付密码</a>
+                </div>
+                <div class="widper10">
+                    <img class="icon" src="../images/next.png" />
+                </div>
+            </div>
+        </div>
+        <div class="haspwd widper100" style="display:none">
+            <div class="bgitem mlper6 oneline wb">
+                <div class="widper10">
+                    <img class="icon" src="../images/forget.png" />
+                </div>
+                <div class="widper80 indentb">
+                    <a href="javascript:void(0);" class="block full"  onclick="ForgetPwd();">忘记密码</a>
+                </div>
+                <div class="widper10">
+                    <img class="icon" src="../images/next.png" />
+                </div>
+            </div>
+        </div>
+        <div class="nopwd widper100" style="display:none">
+            <div class="bgitem mlper6 oneline wb">
+                <div class="widper10">
+                    <img class="icon" src="../images/wallet.png" />
+                </div>
+                <div class="widper80 indentb">
+                    <a href="javascript:void(0);" class="block full"  onclick="SetPwd();">设置密码</a>
+                </div>
+                <div class="widper10">
+                    <img class="icon" src="../images/next.png" />
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="bgitem mlper6 oneline wb last">
+                <div class="widper10">
+                    <img class="icon" src="../images/wallet.png" />
+                </div>
+                <div class="widper80 indentb">
+                    <a href="javascript:void(0);" class="block full"  onclick="UseRecord();">钱包交易明细</a>
+                </div>
+                <div class="widper10">
+                    <img class="icon" src="../images/next.png" />
+                </div>
+            </div>
+       </div>
+  </div>
+</body>
+</html>

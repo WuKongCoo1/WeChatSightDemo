@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>分期付款规则</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script type="text/javascript">
+        var callbackurl = request('callbackurl');
+        $(document).ready(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+        });
+        function goback() {
+            if (!strIsNullOrEmpty(callbackurl)) {
+                callbackurl = decodeURIComponent(callbackurl);
+                var array = {
+                    title: '产品详情',
+                    url: callbackurl,
+                    urlType: 1,
+                    close: true,
+                    children: []
+                };
+                appRedirect(array);
+
+            }
+        }
+
+    </script>
+</head>
+<body>
+    <div class="palr">
+        <div class="g-line mtonerem "> 一、什么是合约购买？</div>
+        <div class=" c-line ">
+            合约购买是世纪守护推出的活动，用户只需承诺在网一定时间，即可享受此项优惠，活动包括：合约优惠购机（包括购机费、功能费）等。
+        </div>
+
+        <div class="g-line mtonerem  ">
+            二、合约购买流程及发货问题:
+        </div>
+        <div class="c-line ">
+            1、如何购买合约机：
+        </div>
+        <div class="c-line">
+            步骤1：找到心仪的商品，填写好订单
+        </div>
+        <div class="c-line">
+            步骤2：选择“合约购买”这种付款方式
+        </div>
+        <div class="c-line">
+            步骤3：确认付款方式后，进入确认银行卡信息页面、阅读并同意相关协议内容；
+        </div>
+        <div class="c-line">
+            步骤4：确认所有信息无误后，确定购买；
+        </div>
+        <div class="c-line">
+            步骤5：坐等收货（请确保是本人签收，并提前准备身份证复印件）
+        </div>
+    </div>
+</body>
+</html>

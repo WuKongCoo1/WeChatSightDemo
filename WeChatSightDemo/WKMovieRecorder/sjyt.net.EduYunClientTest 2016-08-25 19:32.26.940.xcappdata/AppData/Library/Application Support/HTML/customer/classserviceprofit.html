@@ -1,0 +1,129 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>班级服务收益</title>
+    <link href="../css/commom.css" rel="stylesheet" />
+    <script src="../js/jquery-1.6.1.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        var index = 1;
+        var size = 10;
+        var count = 0;
+        var firstLoad = true;
+        var uid = request('uid');
+        var date = request('date');
+        var name = request('name');
+        $(document).ready(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            if (type) {
+                $("#btnsearch").hide();
+            }
+            bind();
+        });
+
+        function bind() {
+            if (strIsNullOrEmpty(date)) {
+                date = "";
+            }
+            else {
+                date = decodeURIComponent(date);
+            }
+            if (strIsNullOrEmpty(name)) {
+                name = "";
+            }
+            else {
+                name = decodeURIComponent(name);
+            }
+            if (firstLoad || (index - 1) * size < count) {
+                $.get(domain + 'api/customer/GetClassServiceProfit', {
+                    uid: uid,
+                    date: date,
+                    name: name,
+                    index: index,
+                    size: size
+                }, function (json) {
+                    var html = '';
+                    if (json.rows.length == 0) {
+                        html = '<div class="nodata noprofit">您还没有班级服务收益呢~</div>';
+                        $("#total").hide();
+                    } else {
+                        $("#total").html("<div class='tcenter oneline patb'>今日收益</div><div class='tcenter p32 '><img  class='moneyicon mtonerem' src='../images/moneybag.png'><span class='mlhalf'>" + json.profit_today + "</span></div></div>  <div class='tcenter oneline'> 总收益(元)</div> <div class=' tcenter p26 '>" + json.profit_total);
+                        html += ' <div class="bgblock">';
+                        $.each(json.rows, function (i, n) {
+                            if (json.rows.length - i == 1) {
+                                html += ' <div class="moneybgitem patb mlper3 last">';
+                            } else {
+                                html += ' <div class="moneybgitem patb mlper3 ">';
+                            }
+                            html += ' <div class="wb">';
+                            html += '<div class="widper70">';
+                            html += ' <div ><div class="inline g-line">' + n.remark + '</div>';
+                            html += ' <div  class="inline c-line  g-font p14">' + n.real_name + '</div> </div>';
+                            html += ' <div class="g-font p14">' + n.create_time + '</div>';
+                            html += ' </div>';
+                            html += '<div class="widper30 tcenter">'
+                            if (!strIsNullOrEmpty(n.score)) {
+                                html += ' <div class="g-line y-font p18 "> ' + n.ideal_money + '</div>';
+                                html += ' <div class="p12 g-font">' + n.score + '积分</div>';
+                            } else {
+                                html += ' <div class="g-line y-font p20 mt10"> +' + n.ideal_money + '</div>';
+                            }
+                            html += '</div>';
+                            html += ' </div>';
+                            html += ' </div>';
+                        });
+                        html += ' </div>'
+                    }
+                    $('#serviceprofit ul').append(html);
+                    $('#serviceprofit div.loading').hide();
+                    count = json.total;
+                    index++;
+                    firstLoad = false;
+                }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                });
+            }
+        }
+
+        function search() {
+            //  var callbackurl = "/customer/classserviceprofit.html" + window.location.search;
+            var array = {
+                title: '班级服务收益',
+                url: '/customer/classserviceprofitsearch.html?uid=' + uid + '&name=' + name + '&date=' + date,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+
+        $(window).scroll(function () {
+            var scrollTop = $(this).scrollTop();
+            var scrollHeight = $(document).height();
+            var windowHeight = $(this).height();
+            if (scrollTop + windowHeight == scrollHeight) {
+                setTimeout(function () {
+                    bind();
+                }, 400);
+            }
+        })
+    </script>
+</head>
+<body>
+    <input type="button" id="btnsearch" onclick="search()" value="搜索" />
+    <div class="benifit" id="total"></div>
+    <div id="serviceprofit">
+        <ul></ul>
+        <div class="loading">加载中...</div>
+    </div>
+
+</body>
+</html>

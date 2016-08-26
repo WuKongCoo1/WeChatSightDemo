@@ -1,0 +1,515 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <script src="../../js/jquery-1.10.2.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script src="../../js/touchevent.js"></script>
+    <link href="../../css/commom.css" rel="stylesheet" />
+    <title>学校通知</title>
+    <script>
+
+        var user_type = request("user_type");
+        var uid = request("uid");
+        var uid_child = request("uid_child");
+        var school_id = request("school_id");
+        var class_id = request("class_id");
+        var txt = request("txt");
+        var loadUnread = 1;
+
+
+        var is_search = 0;
+        var index = 1;
+        var size = 10;
+        var count = 0;
+        var firstLoad = true;
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+
+            $("#btn_search").click(function () {
+                txt = $("#search").val();
+                is_search = 1;
+                index = 1;
+                size = 10;
+                count = 0;
+                firstLoad = true;
+                $("#list").html("");
+                GetList();
+            });
+        });
+
+        $(window).scroll(function () {
+            if (is_search == 1) {
+                var scrollTop = $(this).scrollTop();
+                var scrollHeight = $(document).height();
+                var windowHeight = $(this).height();
+                if (scrollTop + windowHeight == scrollHeight) {
+                    setTimeout(function () {
+                        GetList();
+                    }, 400);
+                }
+            }
+        })
+
+        function GetList() {
+            if (strIsNullOrEmpty(school_id)) school_id = 0
+            if (firstLoad || (index - 1) * size < count) {
+                $.ajax({
+                    type: "get",
+                    async: true,
+                    url: domain + "api/HomeSchoolCommunication/GetMessageList",
+                    data: {
+                        uid: uid,
+                        user_type: user_type,
+                        class_id: class_id,
+                        school_id: school_id,
+                        mes_type_id: getMesTypeId("通知"),
+                        txt: txt,
+                        status: 0,
+                        pageindex: index,
+                        pagesize: size
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        if (data.rows.length > 0) {
+
+                            var listStr = "";
+                            listStr += "<div class='tright'>";
+                            for (var i = 0; i < data.rows.length; i++) {
+                                var plan = new Date(convertDateTimeToString(parseISO8601(data.rows[i].get_date)));
+                                var now = new Date();
+                                if (user_type == "0" || user_type == "4") {
+
+                                    if (data.rows[i].message_type_name == "get") {
+                                        listStr += "<div class='wb relative ' id=\"" + data.rows[i].id + "\">";
+                                    } else {
+                                        listStr += "<div class='wb relative ' id=\"" + data.rows[i].mes_send_id + "\">";
+                                    }
+                                }
+                                else if (user_type == "1") {
+                                    listStr += "<div class='wb relative ' id=\"" + data.rows[i].id + "\">";
+                                }
+
+                                if ((user_type == "0" && plan > now) || (data.rows[i].mes_status != "1" && user_type == "0") || ((user_type == "0" || user_type == "4") && data.rows[i].message_type_name == "get")) {
+                                    //删除
+                                    if (type == "0") {
+                                        if (data.rows[i].message_type_name == "get") {
+                                            listStr += "<div class='andelete wb hide'><div class='patblr' onclick=\"Del(" + data.rows[i].id + ",'" + data.rows[i].message_type_name + "');event.stopPropagation();\">删除</div><div class='ancancel patblr' onclick='cancel(this)'>取消 </div></div>";
+                                        }
+                                        else {
+                                            listStr += "<div class='andelete wb hide'><div class='patblr' onclick=\"Del(" + data.rows[i].mes_send_id + ",'" + data.rows[i].message_type_name + "');event.stopPropagation();\">删除</div><div class='ancancel patblr' onclick='cancel(this)'>取消 </div></div>";
+                                        }
+                                    }
+                                }
+                                else if (uid == data.rows[i].uid_get && user_type == "1") {
+                                    //删除
+                                    if (type == "0") {
+                                        listStr += "<div  class='andelete wb hide'><div class='patblr' onclick=\"Del(" + data.rows[i].id + ",'" + data.rows[i].message_type_name + "');event.stopPropagation();\">删除</div><div  class='ancancel patblr' onclick='cancel(this)'>取消 </div></div>";
+                                    }
+                                }
+                                if (!((user_type == "0" && plan > now) || (data.rows[i].mes_status != "1" && user_type == "0")) && !(uid == data.rows[i].uid_get && user_type == "1") && !((user_type == "0" || user_type == "4") && data.rows[i].message_type_name == "get")) {
+
+                                    listStr += "<div class=' widper100 wb   relative bb1 bgwhite'>";
+                                }
+                                else {
+                                    listStr += "<div class='nitem  widper100   wb relative bb1 bgwhite '>";
+                                }
+                                listStr += "<div class=' tcenter mlper3'>";
+                                //if (!strIsNullOrEmpty(data.rows[i].mes_pic)) {
+                                //    listStr += "<img  class='widper100 mt10' src='" + adminURL + "upload_mes_img/" + school_id + "/thumbnail_" + data.rows[i].mes_pic + "' />"
+                                //} else {
+                                //    listStr += "<img   class='widper100 mt10' src='../../images/noticedefault.png' />"
+                                //}
+                                if (data.rows[i].message_type_name == 'send') {
+                                    listStr += "<img class='noticeitem  mtonerem ' src='../../images/unread_hknotitle.png' />"
+                                } else if (data.rows[i].message_type_name == 'get') {
+                                    if (data.rows[i].status == "0") {
+                                        listStr += "<img class='noticeitem  mtonerem ' src='../../images/unread_notice.png' />"
+                                    }
+                                    else {
+                                        listStr += "<img class='noticeitem  mtonerem ' src='../../images/read_notice.png' />"
+                                    }
+
+                                }
+                                listStr += "</div>";
+                                if (data.rows.length - i == 1) {
+                                    if (data.rows[i].status == "0") {
+                                        listStr += "<div class='adritem mlper3 widper80 tleft  last  '>";
+                                    } else {
+                                        listStr += "<div class='adritem mlper3 widper80 tleft  last  '>";
+                                    }
+
+                                } else {
+                                    if (data.rows[i].status == "0") {
+                                        listStr += "<div class='adritem mlper3 widper80 tleft  last  '>";
+                                    } else {
+                                        listStr += "<div class='adritem mlper3 widper80 tleft  last '>";
+                                    }
+                                }
+                                if (user_type == "0" || user_type == "4") {
+
+                                    listStr += "<div class='cli' onclick=\"GoDetail(" + data.rows[i].mes_send_id + "," + data.rows[i].mes + "," + data.rows[i].mes_status + ",'" + data.rows[i].message_type_name + "',null,this," + data.rows[i].uid_send + ")\" >"; //
+
+                                }
+                                else {
+                                    listStr += "<div class='cli'  onclick=\"GoDetail(" + data.rows[i].id + "," + data.rows[i].mes + "," + data.rows[i].mes_status + ",'" + data.rows[i].message_type_name + "'," + data.rows[i].uid_child + ",this," + data.rows[i].uid_send + ")\" id=\"" + data.rows[i].id + "\">"; //
+                                }
+                                if (!strIsNullOrEmpty(data.rows[i].title)) {
+
+                                    listStr += "<div class='widper100  nowrap wb'>"
+                                    listStr += "<div class='widper60  nowrap'>"
+                                    if (data.rows[i].message_type_name == 'get') {
+                                        if (data.rows[i].status == "0") {
+                                            listStr += data.rows[i].title
+                                        }
+                                        else {
+                                            listStr += "<span class='g-font'>" + data.rows[i].title + "</span>";
+                                        }
+                                    } else {
+                                        listStr += "<span class='g-font'>" + data.rows[i].title + "</span>";
+                                    }
+                                    listStr += "</div>"
+                                    var date = new Date();
+                                    var today = date.getFullYear() + '-' + padLeft((parseInt(date.getMonth()) + 1), 2) + '-' + padLeft(date.getDate(), 2);
+                                    if (convertDateToString(parseISO8601(data.rows[i].get_date)) == today) {
+                                        listStr += "<div class='widper38 p14 g-font tright'>" + convertTimeToString(parseISO8601(data.rows[i].get_date)) + "</div>";
+                                    }
+                                    else if (convertYearToString(parseISO8601(data.rows[i].get_date)) == date.getFullYear().toString()) {
+                                        listStr += "<div class='widper38 p14 g-font tright'>" + convertMothDayToString(parseISO8601(data.rows[i].get_date)) + "</div>";
+                                    }
+                                    else {
+                                        listStr += "<div class='widper38 p14 g-font tright '>" + convertDateToString(parseISO8601(data.rows[i].get_date)) + "</div>";
+                                    }
+
+                                    listStr += "</div>"
+                                }
+                                if (!strIsNullOrEmpty(data.rows[i].context)) {
+                                    listStr += "<div class='widper94 nowrap g-font p14'>" + data.rows[i].context + "</div>";
+                                }
+                                listStr += "<div class='wb'>"
+                                listStr += "<div class='widper75 p14 g-font tleft wb'>" + data.rows[i].uid_send_name;
+                                if (data.rows[i].has_att) {
+                                    listStr += "<div class='mlhalf'><img class='seeicon ml2' src='../../images/filelink.png'></img>" + data.rows[i].att_count + "个附件</div>"
+
+                                }
+                                listStr += "</div>"
+                                //listStr += "<div class='widper60 p14 g-font tright' ><span>" + convertDateTimeToString(parseISO8601(data.rows[i].get_date)) + "</span></div>";
+
+                                if (!strIsNullOrEmpty(data.rows[i].mes_status)) {
+                                    if (data.rows[i].mes_status == "0") {
+                                        listStr += "<div class='y-font p14 mlper3 '>未审核</div>";
+                                    }
+                                    else if (data.rows[i].mes_status == "2") {
+                                        listStr += "<div class='g-font p14 mlper3'>未通过</div>";
+                                    }
+                                }
+
+
+                                listStr += "</div>"
+                                //if (!strIsNullOrEmpty(data.rows[i].mes_status)) {
+                                //    if (data.rows[i].mes_status == "0") {
+                                //        listStr += "<div class='y-font p14 mlper3 '>未审核</div>";
+                                //    }
+                                //    else if (data.rows[i].mes_status == "2") {
+                                //        listStr += "<div class='g-font p14 mlper3'>未通过</div>";
+                                //    }
+                                //}
+                                listStr += "</div>";
+                                listStr += "</div>";
+                                listStr += "</div>";
+
+                                if ((user_type == "0" && plan > now) || (data.rows[i].mes_status != "1" && user_type == "0") || ((user_type == "0" || user_type == "4") && data.rows[i].message_type_name == "get")) {
+                                    //删除
+                                    //if (type == "1") {
+                                    if (data.rows[i].message_type_name == "get") {
+                                        listStr += "<div class='cli' ><input type=\"button\" class='delete'  onclick=\"Del(" + data.rows[i].id + ",'" + data.rows[i].message_type_name + "');event.stopPropagation();\" value=\"删除\" /></div>";
+                                    }
+                                    else {
+                                        listStr += "<div class='cli' ><input type=\"button\" class='delete'  onclick=\"Del(" + data.rows[i].mes_send_id + ",'" + data.rows[i].message_type_name + "');event.stopPropagation();\" value=\"删除\" /></div>";
+                                    }
+                                    //}
+                                }
+                                if (uid == data.rows[i].uid_get && user_type == "1") {
+                                    //删除
+                                    if (type == "1") {
+                                        listStr += "<div  class='cli' ><a href=\"javascript:void(0);\" class='delete' onclick=\"Del(" + data.rows[i].id + ",'" + data.rows[i].message_type_name + "');event.stopPropagation();\">删除</a></div>";
+                                    }
+                                }
+
+
+                                listStr += "</div>";
+                            }
+                            listStr += "</div>";
+
+                            $("#list").append(listStr);
+                            count = data.total;
+                            index++;
+                        }
+                        else {
+                            $("#list").html("<div class='nodata nonotice'>您还没有通知哦</div>");
+                        }
+                        $(".loading").remove();
+                        firstLoad = false;
+                        touchev();
+                    }
+                });
+            }
+
+        }
+
+        function GoDetail(id, is_now, mes_status, message_type_name, uid_child1, obj, uid_send) {
+
+            //判断用户是否有查看详情的条件
+            if (user_type == "1") {
+                if (type == "1") {
+                    bridge.callHandler("isHidden", {}, function (data) {
+                        var isHidden = data.isHidden;
+                        if (isHidden) {
+                            Unremind(id, is_now, mes_status, message_type_name, uid_child1, obj, 1);
+                        }
+                        else {
+                            GenGoDetail(id, is_now, mes_status, message_type_name, uid_child1, obj, uid_send);
+                        }
+                    });
+                }
+                else {
+                    GenGoDetail(id, is_now, mes_status, message_type_name, uid_child1, obj, uid_send);
+                }
+            }
+            else {
+                if (mes_status == "0") {
+                    $(obj).find().addClass("g-font");
+                    $(obj).parent().parent().find(".noticeitem").attr("src", "../../images/read_notice.png");
+                    var array = {
+                        title: '通知详情',
+                        url: '/HomeSchoolCommunication/messageDetail.html?id=' + id + "&is_now=" + is_now + "&user_type=" + user_type + "&uid=" + uid + "&uid_child=" + uid_child + "&class_id=" + class_id + "&message_type_name=" + message_type_name + "&message_type_id=2",
+                        urlType: 1,
+                        close: false,
+                        children: [
+                        {
+                            title: '修改',
+                            url: 'Update()',
+                            urlType: 2,
+                            childTitle: ''
+                        }]
+                    };
+                    appRedirect(array);
+                } else {
+                    if (uid == uid_send) {
+                        var array = {
+                            title: '通知详情',
+                            url: '/HomeSchoolCommunication/messageDetail.html?id=' + id + "&is_now=" + is_now + "&user_type=" + user_type + "&uid=" + uid + "&uid_child=" + uid_child + "&class_id=" + class_id + "&message_type_name=" + message_type_name + "&message_type_id=2",
+                            urlType: 1,
+                            close: false,
+                            children: [
+                            {
+                                title: '查看统计',
+                                url: 'ShowReport()',
+                                urlType: 2,
+                                childTitle: ''
+                            }]
+                        };
+                        appRedirect(array);
+                    }
+                    else {
+                        $(obj).find().addClass("g-font");
+                        $(obj).parent().parent().find(".noticeitem").attr("src", "../../images/read_notice.png");
+                        var array = {
+                            title: '通知详情',
+                            url: '/HomeSchoolCommunication/messageDetail.html?id=' + id + "&is_now=" + is_now + "&user_type=" + user_type + "&uid=" + uid + "&uid_child=" + uid_child + "&class_id=" + class_id + "&message_type_name=" + message_type_name + "&message_type_id=2",
+                            urlType: 1,
+                            close: false,
+                            children: []
+                        };
+                        appRedirect(array);
+                    }
+                }
+            }
+
+        }
+
+        function GenGoDetail(id, is_now, mes_status, message_type_name, uid_child1, obj, uid_send) {
+            $.ajax({
+                type: "get",
+                async: true,
+                url: domain + "api/HomeSchoolCommunication/MessageShowForUser",
+                data: {
+                    uid: uid,
+                    class_id: class_id,
+                    is_now: is_now,
+                    id: id,
+                    message_type_id: 2
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                }, success: function (data) {
+                    if (data.res == "0") {
+                        var res_user_pay_type = data.res_user_pay_type;
+                        if (res_user_pay_type == "2") {
+                            var res_pay_score = data.res_pay_score;
+                            var is_remind = 1;
+                            if (type == "1" || type == "0") {
+                                bridge.callHandler("getScoreReminder", { module: 5 }, function (data) {
+                                    if (type == "0") {
+                                        data = JSON.parse(data);
+                                    }
+                                    is_remind = data.is_remind;
+                                    if (is_remind == 0) {
+                                        Unremind(id, is_now, mes_status, message_type_name, uid_child1, obj);
+                                    }
+                                    else {
+                                        Remind(res_pay_score, id, is_now, mes_status, message_type_name, uid_child1, obj);
+                                    }
+                                });
+                            } else {
+                                Remind(res_pay_score, id, is_now, mes_status, message_type_name, uid_child1, obj);
+                            }
+                            //else if (type == "0" && 'surfaceView' in window) {
+                            //    is_remind = surfaceView.getScoreReminder(5);
+                            //    if (is_remind == 0) {
+                            //        Unremind(id, is_now, mes_status, message_type_name, uid_child1, obj);
+                            //    }
+                            //    else {
+                            //        Remind(res_pay_score, id, is_now, mes_status, message_type_name, uid_child1, obj);
+                            //    }
+                            //}
+
+                        }
+                        else {
+                            Unremind(id, is_now, mes_status, message_type_name, uid_child1, obj);
+                        }
+                    }
+                    else if (data.res == "2") {
+                        choicetwo("积分不足，无法查阅！", "取消", function () { $('.overlay').hide(); }, "查看服务", function () {
+                            var array = {
+                                title: '班级服务',
+                                url: '/customer/classservice.html?uid=' + uid + "&classid=" + class_id,
+                                urlType: 1,
+                                close: false,
+                                children: []
+                            };
+                            appRedirect(array);
+                        });
+                    }
+                    else if (data.res == "3") {
+                        choicetwo("您没有购买班级包月服务，无法查阅！", "取消", function () { $('.overlay').hide(); }, "查看服务", function () {
+                            var array = {
+                                title: '班级服务',
+                                url: '/customer/classservice.html?uid=' + uid + "&classid=" + class_id,
+                                urlType: 1,
+                                close: false,
+                                children: []
+                            };
+                            appRedirect(array);
+                        });
+                    }
+                    else if (data.res == "4") {
+                        error("参数不足，不能查看");
+                    }
+                    else if (data.res == "5") {
+                        error("该条" + getMesTypeName(2, 1) + "已被您删除，您无法查看详情");
+                    }
+                }
+            });
+        }
+
+        function Del(id, someWhere) {
+            dialogbox("确认删除？", function () {
+                $.ajax({
+                    type: "get",
+                    async: false,
+                    url: domain + "api/HomeSchoolCommunication/MessageDelete",
+                    data: {
+                        id: id,
+                        someWhere: someWhere
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        if (data.res > 0) {
+                            error("删除成功！");
+                            $("#" + id).remove();
+                        }
+                        else {
+                            error("删除失败！");
+                        }
+                        return false;
+                    }
+                });
+            });
+        }
+        $(function () {
+            touchev();
+        })
+
+        function Remind(res_pay_score, id, is_now, mes_status, message_type_name, uid_child1, obj) {
+            if (res_pay_score > 0) {
+
+                dialogbox("<div>查看详情需要扣除您" + res_pay_score + "积分，确认查看？</div><label class='label relative mt10' onclick='ischeck(this,true)'><input class='ckboxout' type=\"checkbox\" id=\"remind\" /><span class='mlonerem g-font'>不再提示</span></label>", function () {
+
+                    if (isChecked($("#remind"))) {
+                        if (type == "1" || type == "0") {
+                            bridge.callHandler("setScoreReminder", { module: 5, is_remind: 0 });
+                        }
+                        //else if (type == "0" && 'surfaceView' in window) {
+                        //    surfaceView.setScoreReminder(JSON.stringify({ module: 5, is_remind: 0 }));
+                        //}
+                    }
+                    Unremind(id, is_now, mes_status, message_type_name, uid_child1, obj);
+                });
+            }
+            else {
+                Unremind(id, is_now, mes_status, message_type_name, uid_child1, obj);
+            }
+        }
+
+        function Unremind(id, is_now, mes_status, message_type_name, uid_child1, obj, nocut) {
+            $(obj).addClass("g-font");
+            $(obj).parent().parent().find(".noticeitem").attr("src", "../../images/read_notice.png");
+            var array = {
+                title: '通知详情',
+                url: '/HomeSchoolCommunication/messageDetail.html?id=' + id + "&is_now=" + is_now + "&user_type=" + user_type + "&uid=" + uid + "&uid_child=" + uid_child1 + "&class_id=" + class_id + "&message_type_name=" + message_type_name + (!strIsNullOrEmpty(nocut) ? "&nocut=" + nocut : "") + "&message_type_id=2",
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+
+        function clearunred() {
+            UnreadClear(uid, school_id, user_type, class_id, 3);
+            var src_ = "../../images/read_notice.png";
+            var i = 0;
+            var bl = UnreadClear(uid, school_id, user_type, class_id, 3);
+            if (bl) {
+                $('.noticeitem').attr('src', src_);
+                $('.cli').find('.widper60').addClass('g-font');
+            }
+        }
+    </script>
+</head>
+<body class="pabonerem">
+    <div id="pageContext">
+        <div id="button" class="searchdiv wb">
+            <div class="widper80">
+                <input id="search" class="widper100 indentb" placeholder="输入标题/内容进行查找" />
+            </div>
+            <div class="widper20 tright">
+                <input type="button" id="btn_search" class="searbtn" />
+            </div>
+        </div>
+        <div id="list" class="">
+            
+        </div>
+    </div>
+    <div id="class_list" class="mtonerem"></div>
+</body>
+</html>

@@ -1,0 +1,104 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>提现成功</title>
+    <link href="../css/commom.css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        $(function () {
+            var id = request("id");
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    bridge.registerHandler("onClickBack", function (data, responseCallback) {
+                        var array = {
+                            title: '爱心钱包',
+                            url: 'backRefresh()',
+                            urlType: 2,
+                            close: true,
+                            shutAll: true,
+                            children: []
+                        };
+                        responseCallback(array);
+
+                    });
+                }, false);
+            }
+
+            $.ajax({
+                type: "get",
+                async: true,
+                url: domain + "api/Customer/GetIdealMoneyWithdrawalsInfo",
+                data: {
+                    id: parseInt(id)
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                }, success: function (data) {
+                    $("#time").html(convertDateTimeToString(parseISO8601(data.rows.create_time)));
+                    $("#card").html(data.rows.card_no);
+                    $("#RMB").html(data.rows.cash_amount);
+                }
+            });
+        });
+
+        function onClickBack() {
+            var array = {
+                title: '爱心钱包',
+                url: 'backRefresh()',
+                urlType: 2,
+                close: true,
+                shutAll: true,
+                children: []
+            };
+            appRedirect(array);
+        }
+    </script>
+</head>
+<body>
+    <div class="tcenter mtb10">
+        <img src="../images/getmeney.png" />
+    </div>
+    <div class="tcenter mtb10">提现申请已提交，等待系统处理...</div>
+    <div class="wb widper90 acenter">
+        <div class="p14 g-font widper50 tleft">
+            提现明细
+        </div>
+        <div class="p14  widper50 tright y-font">
+            处理中
+        </div>
+    </div>
+    <div class="bgblock mtonerem">
+        <div class="widper90 acenter wb patb">
+            <div class="p14 g-font widper30 tleft">
+                时间
+            </div>
+            <div class="p14 g-font widper70 tright">
+                <span id="time"></span>
+            </div>
+        </div>
+        <div class="widper90 acenter wb patb">
+            <div class="p14 g-font widper30 tleft">
+                提现银行卡
+            </div>
+            <div class="p14 g-font widper70 tright">
+                <span id="card"></span>
+            </div>
+        </div>
+        <div class="widper90 acenter wb patb">
+            <div class="p14 g-font widper30 tleft">
+                金额
+            </div>
+            <div class="p14 g-font widper70 tright">
+                <span id="RMB"></span>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

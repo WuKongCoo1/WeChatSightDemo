@@ -1,0 +1,811 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>填写订单</title>
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <link href="../css/swiper.min.css" rel="stylesheet" />
+    <link href="../css/normal.css" rel="stylesheet" />
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script type="text/javascript">
+
+        var product_id = request('product_id');
+        var uid = request('uid');
+        var addressid = request('addressid');;
+        var from_type = request('from_type');
+        var original_id = request('original_id');
+        var class_ids = request('class_ids');
+        var class_names = request('class_names');
+        var productAttr = request('product_type');
+        var buyclass = false;
+        $(document).ready(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    bridge.registerHandler("setClass", function (data) { setClass(data); });
+                }, false);
+            }
+
+            if (!strIsNullOrEmpty(productAttr)) {
+
+                $.ajax({
+                    url: domain + 'api/mall/GetDesUid',
+                    data: {
+                        uid: uid
+                    },
+                    async: false,
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    },
+                    success: function (data) {
+                        if (data.operationStatus == 1) {
+                            uid = data.message;
+                            $.ajax({
+                                url: domain + 'api/mall/GetProductListPagerNew',
+                                data: {
+                                    attrs: productAttr,
+                                    name: '',
+                                    index: 1,
+                                    size: 10,
+                                    uid: uid
+                                },
+                                async: false,
+                                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                                },
+                                success: function (json) {
+                                    var html = '';
+                                    if (json.rows.length == 0) {
+                                        $('body').children().remove();
+                                        $('body').html('<div class="noleave nodata g-font">哦吼~这里什么都没有</div>');
+                                    } else {
+
+                                        product_id = json.rows[0].id;
+                                        bind();
+                                    }
+
+                                }
+                            });
+                        }
+                        else {
+                            $('body').children().remove();
+                            $('body').html('<div class="noleave nodata g-font">哦吼~这里什么都没有</div>');
+                            error('参数有误');
+                            $('.loading').addClass('hide');
+
+                        }
+                    }
+                });
+
+            }
+            else {
+                bind();
+            }
+
+
+            $(".reduce").click(function () {
+                var quantity = $("#txtcount").val();
+                $("#txtcount").val(parseInt(quantity) - 1);
+                changeprice();
+            });
+
+            $(".add").click(function () {
+                var quantity = $("#txtcount").val();
+                $("#txtcount").val(parseInt(quantity) + 1);
+                changeprice();
+            });
+
+
+        });
+
+        //绑定数据
+        function bind() {
+            var post_url = domain + "api/mall/GetProductDetailNew";
+            $.ajax({
+                url: post_url,
+                data: {
+                    product_id: product_id
+                },
+                async: false,
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (data) {
+                    var html = '';
+                    var obj = data.rows;
+                    var paymoney = 0;
+                    var payscore = 0;
+                    var paytype = "";
+                    html += '<div class=" bgwhite "><div id="productimgs" class="biggiftimg" >';
+                    html += '</div></div>';
+                    $("#pdes").append(html);
+                    html = "";
+                    if (obj.product_spec != null && obj.product_spec != "") {
+                        html = pspec(obj.product_spec, obj.product_img);
+                    }
+                    else {
+                        loaddefaultmg([], obj.product_img);
+                    }
+                    html += "<div class='bgblock'>";
+                    if (obj.product_attr == 3) {
+                        html += '<div class=" mlper6 adritem wb  patbb last">';
+                    }
+                    else {
+                        html += '<div class=" mlper6 adritem wb  patbb ">';
+                    }
+                    html += '<div class="widper70 c-line">' + obj.name + '</div>';
+                    paymoney = obj.product_price;
+                    payscore = obj.discount_score;
+                    $("#hidprice").val(paymoney);
+                    $("#hidscore").val(payscore);
+                    $("#hidpricetype").val(obj.price_type);
+                    $("#hidis_instalment").val(obj.is_instalment);
+                    $("#hidinstalmentcount").val(obj.instalment_count);
+                    $("#hidproduct_attr").val(obj.product_attr);
+                    if (obj.product_attr == 7) {
+                        $("#hidgettelcost").val(obj.get_tel_cost)
+                    }
+                    if (obj.product_attr == 8) {
+                        $("#hidgetflow").val(obj.get_flow)
+                    }
+                    if (!strIsNullOrEmpty(obj.price_type) && obj.price_type.indexOf("1") != -1) {
+                        html += '<div class="widper30 tcenter y-font"><span class="p26 y-font">' + payscore + '积分</span>';
+                    }
+                    else {
+                        html += '<div class="widper30 tcenter y-font">￥<span class="p26 y-font">' + paymoney + '</span>';
+                    }
+                    html += '</div>';
+                    html += '</div>';
+                    if (obj.product_attr == 6) {
+                        if (class_names) {
+                            class_names = decodeURIComponent(class_names);
+                        }
+                        buyclass = true;
+                        if (strIsNullOrEmpty(class_ids)) {
+                            html += '<div class="adritem mlper6 last">'
+                            html += '使用对象：';
+                            html += '<div id="div_classnames"  class="y-font" onclick="selectClass()">选择班级</div>';
+                            html += '</div>';
+                        }
+                        else {
+                            $("#hidclassids").val(class_ids);
+                            html += '<div class="adritem mlper6 last">'
+                            html += '使用对象：';
+                            html += '<div id="div_classnames"  class="y-font">' + class_names + '</div>';
+                            html += '</div>';
+                        }
+                    }
+                    else {
+                        if (obj.product_attr != 3 && obj.product_attr != 7 && obj.product_attr != 8) {
+                            html += '<div class="bgitem mlper6 oneline wb last"><div class="widper40">购买数量</div><div class="widper60 tright relative "><div class="minus reduce">-</div><input type="number" id="txtcount" class="mrthreerem buycount" oninput="changeprice()" value="1" /><div class="plus add">+</div></div></div>';
+                        }
+                        if (obj.product_attr == 7 || obj.product_attr == 8) {
+                            html += '<div class="bgitem mlper6 oneline wb"><div class="widper40">充值手机号码</div><div class="widper60 tright relative ">  <input type="tel" class="bgiconitem" id="txt_recharge_tel" name="phone_number" maxlength="11" placeholder="请输入手机号码" /></div></div>';
+                            html += '<div class="bgitem mlper6 oneline wb last"><div class="widper40">手机号码归属地</div><div id="telmsg" class="g-font"></div></div>';
+                        }
+                    }
+                    html += ' </div>'
+                    html += ' <div id="myaddress"></div>';
+                    html += '<div class="bottom wb"><div class="widper70 y-font tcenter p26">应支付:';
+                    if (!strIsNullOrEmpty(obj.price_type) && obj.price_type.indexOf('1') != -1) {
+                        html += '<span id="paymoney" class="p26">' + payscore + '积分</span>';
+                        $("#hidpaytype").val('4');
+                    }
+                    else {
+                        html += '<span id="paymoney" class="p26">' + paymoney + '元</span>';
+                        $("#hidpaytype").val('1');
+                    }
+                    html += '</div><div class="widper30"> <div id="btnok" class="btnblock widper100 w-font tcenter"  >确认支付</div></div>';
+                    $("#pdes").append(html);
+                    $("#btnok").bind('click', createorder);
+                    bindpspec();
+                    if (obj.product_attr == "1") {
+                        //如果传了地址id就根据地址id查询，入股没传更具用户uid查询默认地址
+                        if (addressid && addressid != "") {
+                            loadaddressbyid(addressid);
+                        }
+                        else {
+                            loadaddress(uid);
+                        }
+                    }
+                    //手机号码归属地
+                    $("#txt_recharge_tel").bind("input", function () {
+                        var tel = $("#txt_recharge_tel").val();
+                        if (tel.length == 11) {
+                            if (isMobilePhone(tel)) {
+                                //调用接口，查询归属地，运营商
+
+                                $.get(domain + 'api/mall/Mobile', {
+                                    code: "get",
+                                    phoneno: tel,
+                                    cardnum: "",
+                                    orderid: "",
+                                    pagesize: "",
+                                    page: ""
+                                }, function (data) {
+                                    //{"resultcode":"200","reason":"Return Successd!","result":{"province":"四川","city":"成都","areacode":"028","zip":"610000","company":"中国电信","card":"中国电信 CDMA"},"error_code":0}
+                                    if (data.operationStatus == 1) {
+                                        var json = JSON.parse(data.message);
+                                        var html = json.province + ' ' + json.city + ' ' + json.company;
+                                        $("#telmsg").html(html);
+                                    } else {
+                                        $("#telmsg").html(data.message);
+                                    }
+                                }).error(function (XMLHttpRequest, errorText, errorType) {
+                                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                                });
+                            }
+                            else {
+                                error('手机号码有误');
+                            }
+                        }
+                        else {
+                            $("#telmsg").html('');
+                        }
+                    });
+                    $(".loading").hide();
+                }
+            });
+        }
+
+
+        //数量改变
+        function changeprice() {
+            var quantity = $("#txtcount").val();
+            var price = $("#hidprice").val();
+            var score = $("#hidscore").val();
+            var price_type = $("#hidpricetype").val();
+            var classs = $("#hidclassids").val().split(',').length;
+            if (!strIsNullOrEmpty(quantity)) {
+                if (!isInt(quantity) || parseInt(quantity) <= 0 || parseInt(quantity) > 100) {
+                    // error("请输入正确的数量");
+                    if (quantity > 100) {
+                        quantity = 100;
+                        $("#txtcount").val('100');
+                    }
+                    else {
+                        $("#txtcount").val('1');
+                        quantity = 1;
+                    }
+                }
+                if (buyclass) {
+                    var payprice = (parseFloat(price) * parseInt(quantity) * classs).toFixed(2);
+                    $("#paymoney").text(payprice + '元');
+                }
+                else {
+                    if (price_type.indexOf("1") != -1) {
+                        var payprice = (parseInt(score) * parseInt(quantity));
+                        $("#paymoney").text(payprice + '积分');
+                    } else {
+                        var payprice = (parseFloat(price) * parseInt(quantity)).toFixed(2);
+                        $("#paymoney").text(payprice + '元');
+                    }
+                }
+
+            }
+            else {
+                if (price_type.indexOf("1") != -1) {
+                    $("#paymoney").text(score + '积分');
+                } else {
+                    var payprice = parseFloat(price).toFixed(2);
+                    $("#paymoney").text(payprice + '元');
+                }
+
+            }
+
+        }
+        //绑定规格
+        function pspec(spec, defaultimg) {
+            //[{"id":"4","name":"23","key":"23","spec_group_id":"2","spec_group_name":"尺码","is_primary":"false","img_list":[],"img_list_thumbnail":[]},{"id":"5","name":"24","key":"24","spec_group_id":"2","spec_group_name":"尺码","is_primary":"false","img_list":[],"img_list_thumbnail":[]},{"id":"6","name":"25","key":"25","spec_group_id":"2","spec_group_name":"尺码","is_primary":"false","img_list":[],"img_list_thumbnail":[]},{"id":"14","name":"红色","key":"red","spec_group_id":"3","spec_group_name":"颜色","is_primary":"true","img_list":["1682078679.png","1293294851.png","11552313085.jpg","11345657484.png","1-1120346301.png"],"img_list_thumbnail":["thumbnail_1682078679.png","thumbnail_1293294851.png","thumbnail_11552313085.jpg","thumbnail_11345657484.png","thumbnail_1-1120346301.png"]},{"id":"15","name":"黄色","key":"yellow","spec_group_id":"3","spec_group_name":"颜色","is_primary":"true","img_list":["12111973760.png","11646451020.png","11679047153.jpg","1-428427432.png","1-1590171122.png"],"img_list_thumbnail":["thumbnail_12111973760.png","thumbnail_11646451020.png","thumbnail_11679047153.jpg","thumbnail_1-428427432.png","thumbnail_1-1590171122.png"]},{"id":"16","name":"绿色","key":"green","spec_group_id":"3","spec_group_name":"颜色","is_primary":"true","img_list":["11128280043.png","1-717730445.png","1-45844043.jpg","11849366114.png","1-298277835.png"],"img_list_thumbnail":["thumbnail_11128280043.png","thumbnail_1-717730445.png","thumbnail_1-45844043.jpg","thumbnail_11849366114.png","thumbnail_1-298277835.png"]},{"id":"17","name":"蓝色","key":"blue","spec_group_id":"3","spec_group_name":"颜色","is_primary":"true","img_list":["1-2034826191.png","1-468034623.png","1672261238.jpg","1-446055828.png","11247536776.png"],"img_list_thumbnail":["thumbnail_1-2034826191.png","thumbnail_1-468034623.png","thumbnail_1672261238.jpg","thumbnail_1-446055828.png","thumbnail_11247536776.png"]}]
+            if (spec) {
+                try {
+                    var obj = JSON.parse(spec);
+                    var sphtml = "";
+                    var arrgroupid = new Array(obj.length);
+                    var arrgroupnae = new Array(obj.length);
+                    $.each(obj, function (i, n) {
+                        arrgroupid[i] = n.spec_group_id;
+                        arrgroupnae[i] = n.spec_group_name;
+                    });
+                    var arrid = unique(arrgroupid);
+                    var arrname = unique(arrgroupnae);
+                    var isfirstprimary = true; //是否是第一个主属性
+                    sphtml += "<div class='bgwhite pal6 pabonerem'>";
+                    for (var i = 0; i < arrid.length; i++) {
+                        sphtml += "<div class='patb'>选择" + arrname[i] + "</div>";
+                        $.each(obj, function (j, n) {
+                            if (arrid[i] == n.spec_group_id) {
+                                if (n.is_primary == "true") {
+                                    sphtml += '<span class="choosespec" onclick="changeimg(this)" spec_group_id="' + n.spec_group_id + '"  imglist="' + n.img_list + '"  img_list_thumbnail="' + n.img_list_thumbnail + '" spec_key="' + n.key + '" spec_id="' + n.id + '">' + n.name + '</span>';
+                                    //图片显示第一个主属性
+                                    if (isfirstprimary) {
+                                        loaddefaultmg(n.img_list, defaultimg);
+                                    }
+                                    isfirstprimary = false;
+                                } else {
+                                    sphtml += '<span class="choosespec" spec_group_id="' + n.spec_group_id + '"  spec_key="' + n.key + '" spec_id="' + n.id + '">' + n.name + '</span>';
+                                }
+                            }
+                        });
+                        sphtml += '<input type="hidden" class="spec" id="hidSpec_' + arrid[i] + '" alt="' + arrname[i] + '" />';
+                    }
+                    sphtml += '</div>';
+                    return sphtml;
+                } catch (e) {
+                    return "";
+                }
+            } else {
+                return "";
+            }
+        }
+        //绑定默认图片
+        function loaddefaultmg(imgnames, defaultimg) {
+            var imghtml = "";
+            imghtml += '<div class="swiper-container">'
+            imghtml += '<div class="swiper-wrapper">'
+            for (var i = 0; i < imgnames.length; i++) {
+                imghtml += ' <div class="swiper-slide">'
+                imghtml += '<img  src="' + imgnames[i] + '" alt="产品图片" />';
+                imghtml += '</div>'
+            }
+            if (imgnames.length == 0) {
+                imghtml += ' <div class="swiper-slide">'
+                imghtml += '<img  onerror="onerror=null;src=\'../images/default-product.png\'"  src="' + (strIsNullOrEmpty(defaultimg) ? "../images/default-product.png" : defaultimg) + '" alt="产品图片" />';
+                imghtml += '</div>'
+            }
+            imghtml += '</div>'
+            if (imgnames.length > 1) {
+                imghtml += ' <div class="swiper-pagination"></div>'
+            }
+            imghtml += '</div>'
+            $("#productimgs").html(imghtml);
+            initswip();
+
+        }
+        //选择主属性切换图片
+        function changeimg(obj) {
+            var imgnames = $(obj).attr("imglist");
+            var imgthumbnailnames = $(obj).attr("img_list_thumbnail");
+
+            var imghtml = "";
+            var names = imgnames.split(',');
+            imghtml += '<div class="swiper-container">'
+            imghtml += '<div class="swiper-wrapper">'
+            if (strIsNullOrEmpty(imgnames)) {
+                imghtml += ' <div class="swiper-slide">'
+                imghtml += '<img  src="../images/default-product.png" alt="产品图片" />';
+                imghtml += '</div>'
+            }
+            else {
+                for (var i = 0; i < names.length; i++) {
+                    imghtml += ' <div class="swiper-slide">'
+                    imghtml += '<img  src="' + names[i] + '" alt="产品图片" />';
+                    imghtml += '</div>'
+                }
+            }
+
+            imghtml += '</div>'
+            if (names.length > 1) {
+                imghtml += ' <div class="swiper-pagination"></div>'
+            }
+
+            imghtml += '</div>'
+            $("#productimgs").html(imghtml);
+            initswip();
+
+        }
+        //选择规格改变样式
+        function bindpspec() {
+            $(".choosespec").click(function () {
+                var spec_group_id = $(this).attr('spec_group_id');
+                var spec_id = $(this).attr('spec_id');
+                var spec_key = $(this).attr('spec_key');
+                $("#hidSpec_" + spec_group_id).val(spec_id);
+                $('.choosespec[spec_group_id=' + spec_group_id + ']').removeClass('coloron');
+                $(this).addClass('coloron');
+            });
+        }
+        //加载用户默认地址
+        function loadaddress(uid) {
+            $.get(domain + 'api/mall/GetDefaultAddressByUid', {
+                uid: uid
+            }, function (json) {
+                var html = '';
+                if (json.model == null) {
+                    html = '<div class="bgblock oneline patb indentb mtb5 y-font wb"onclick="addAddress()"><div class="widper80">+添加收货地址</div>';
+                    html += '<div class = "widper10">';
+                    html += '<img  class="icon mt3" src="../images/next.png" />';
+                    html += '</div>'
+                    html += '</div>'
+                } else {
+                    var ad = json.model;
+                    $("#hidaddressid").val(ad.id);
+                    html += '<div class="mlper6 pat mt10 mb10">收货信息</div>';
+                    html += '<div class="bgblock  wb">';
+                    html += '<div class="widper90" onclick="selectAddress()">';
+                    html += '<div class="adritem mlper6 last">' + ad.linkman + '</div>';
+                    html += '<div class="adritem mlper6 last ">' + ad.phone_number + '</div>';
+                    html += '<div class="adritem mlper6  last ">' + ad.province_name + ad.city_name + ad.area_name + ad.full_address + '</div>';
+                    html += '</div>';
+                    html += '<div class = "widper10">';
+                    html += '<img  class="adricon" src="../images/next.png" />';
+                    html += '</div>'
+                    html += '</div>';
+                }
+                $('#myaddress').html(html);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+        //根据地址id加载地址
+        function loadaddressbyid(id) {
+            $.get(domain + 'api/mall/GetAddressDetail', {
+                id: id
+            }, function (json) {
+                var html = '';
+                if (json.model == null) {
+                    html = '<div class="bgblock oneline patb indentb mtb5 y-font wb"onclick="addAddress()"><div class="widper80">+添加收货地址</div>';
+                    html += '<div class = "widper10">';
+                    html += '<img  class="icon mt3" src="../images/next.png" />';
+                    html += '</div>'
+                    html += '</div>'
+                } else {
+                    var ad = json.model;
+                    $("#hidaddressid").val(ad.id);
+                    html += '<div class="mlper6 pat mt10 mb10">收货信息</div>';
+                    html += '<div class="bgblock  wb">';
+                    html += '<div class="widper90" onclick="selectAddress()">';
+                    html += '<div class="adritem mlper6 last">' + ad.linkman + '</div>';
+                    html += '<div class="adritem mlper6 last ">' + ad.phone_number + '</div>';
+                    html += '<div class="adritem mlper6  last ">' + ad.province_name + ad.city_name + ad.area_name + ad.full_address + '</div>';
+                    html += '</div>';
+                    html += '<div class = "widper10">';
+                    html += '<img  class="adricon" src="../images/next.png" />';
+                    html += '</div>'
+                    html += '</div>';
+                }
+                $('#myaddress').html(html);
+            }).error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        //js设置地址
+        function setAddressId(id) {
+            addressid = id;
+            loadaddressbyid(id)
+        }
+        //创建订单
+        function createorder() {
+            $("#btnok").unbind('click', createorder);
+            var leave_message = "";
+            var quantity = $("#txtcount").val();
+            var receive_uids = "";
+            var epsids = "";
+            var address_id = $("#hidaddressid").val();
+            var order_pay_type_id = $("#hidpaytype").val();
+            var recharge_tel = $("#txt_recharge_tel").val();
+            class_ids = $("#hidclassids").val();
+            var flag = true;
+            $(".spec").each(function () {
+                if ($(this).val() == "") {
+                    flag = false;
+                    error("选择" + $(this).attr("alt"));
+                    $("#btnok").bind('click', createorder);
+                    return false;
+                } else {
+                    epsids = epsids + $(this).val() + ",";
+                }
+            });
+            epsids = epsids.substr(0, epsids.length - 1);
+            var product_attr = $("#hidproduct_attr").val()
+            if (product_attr != "6" && product_attr != "7" && product_attr != "8" && product_attr != "3") {
+                if (flag && (!strIsNullOrEmpty(quantity) && !isInt(quantity)) || quantity == "0" || strIsNullOrEmpty(quantity)) {
+                    flag = false;
+                    error("请输入正确的数量");
+                }
+            }
+            else {
+                quantity = 1;
+            }
+
+            if (flag && product_attr == "1" && strIsNullOrEmpty(address_id)) {
+                flag = false;
+                error("请填写地址");
+            }
+
+            if (flag && product_attr == "6" && strIsNullOrEmpty(class_ids)) {
+                flag = false;
+                error('请选择班级');
+            }
+            if (flag && (product_attr == 7 || product_attr == 8) && (strIsNullOrEmpty(recharge_tel) || !isMobilePhone(recharge_tel))) {
+                flag = false;
+                error('请输入正确的电话号码');
+            }
+
+            if (flag && product_attr == 7) {
+                var get_tel_cost = $("#hidgettelcost").val()
+                //检测号码是否支持充值
+                $.ajax({
+                    type: "get",
+                    url: domain + 'api/mall/Mobile',
+                    data: {
+                        code: "telcheck",
+                        phoneno: recharge_tel,
+                        cardnum: get_tel_cost,
+                        orderid: "",
+                        pagesize: "",
+                        page: ""
+                    },
+                    async: false,
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    },
+                    success: function (data) {
+                        if (data.operationStatus != 1) {
+                            flag = false;
+                            error(data.message);
+                        }
+                    }
+                });
+            }
+
+            if (flag && product_attr == 8) {
+                var get_flow = $("#hidgetflow").val()
+                //检测电话号码是否支持流量套餐
+                $.ajax({
+                    type: "get",
+                    url: domain + 'api/mall/CheckTelFlow',
+                    data: {
+                        phone: recharge_tel,
+                        get_flow: get_flow
+                    },
+                    async: false,
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    },
+                    success: function (data) {
+                        if (data.operationStatus != 1) {
+                            flag = false;
+                            error(data.message);
+                        }
+                    }
+                });
+            }
+
+            if (flag) {
+                pop('正在创建订单');
+                $.ajax({
+                    url: domain + "api/mall/CreateOrder",
+                    data: {
+                        product_id: product_id,
+                        uid: uid,
+                        leave_message: leave_message,
+                        quantity: quantity,
+                        receive_uids: receive_uids,
+                        from_type: from_type,
+                        original_id: original_id,
+                        address_id: address_id,
+                        epsids: epsids,
+                        order_pay_type_id: order_pay_type_id,
+                        class_ids: class_ids,
+                        recharge_tel: recharge_tel
+                    },
+                    async: false,
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        $("#btnok").bind('click', createorder);
+                        clearpop();
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    },
+                    success: function (data) {
+                        clearpop();
+                        $("#btnok").bind('click', createorder);
+                        if (data.flag == "true") {
+                            var orderno = data.orderno;
+                            var isinstalment = $("#hidis_instalment").val();
+                            var instalmentcount = $("#hidinstalmentcount").val();
+                            if (data.ispay == "false") {
+                                if (isinstalment == "true") {
+                                    choicebox("合约购买",
+                                        function () {
+                                            var paramArray =
+                                            {
+                                                title: '合约购买',
+                                                url: '/mall/installmentpayment.html?uid=' + uid + "&orderno=" + orderno + '&instalment_count=' + instalmentcount,
+                                                urlType: 1,
+                                                close: false,
+                                                isShut: true,
+                                                children: []
+                                            };
+                                            appRedirect(paramArray);
+                                        }, "一次性支付",
+                                    function () {
+                                        var paramArray =
+                                            {
+                                                title: '确认支付',
+                                                url: '/mall/confirmorder.html?uid=' + uid + "&orderno=" + orderno,
+                                                urlType: 1,
+                                                close: false,
+                                                isShut: true,
+                                                children: []
+                                            };
+                                        appRedirect(paramArray);
+                                    });
+                                }
+                                else {
+                                    var paramArray =
+                                    {
+                                        title: '确认支付',
+                                        url: '/mall/confirmorder.html?uid=' + uid + "&orderno=" + orderno,
+                                        urlType: 1,
+                                        close: false,
+                                        isShut: true,
+                                        children: []
+                                    };
+                                    appRedirect(paramArray);
+                                }
+                            }
+                            else {
+                                //支付成功跳转我的订单
+                                var paramArray =
+                                         {
+                                             title: '支付成功',
+                                             url: '/mall/paysuccess.html?uid=' + uid + "&ordernumber=" + orderno,
+                                             urlType: 1,
+                                             close: false,
+                                             isShut: true,
+                                             children: []
+                                         };
+                                appRedirect(paramArray);
+                            }
+                        }
+                        else {
+                            if (data.res == -3) {
+                                choiceone("该商品已下架", "关闭", function () {
+                                    var paramArray =
+                                       {
+                                           title: '世纪商城',
+                                           url: '/mall/productlist.html?uid=' + uid,
+                                           urlType: 1,
+                                           close: true,
+                                           children: []
+                                       };
+                                    appRedirect(paramArray);
+                                });
+                            }
+                            else {
+                                error(data.msg);
+                            }
+                        }
+                    }
+
+                });
+            }
+            else {
+                $("#btnok").bind('click', createorder);
+            }
+        }
+        //选择地址
+        function selectAddress() {
+
+            var callbackurl = "/mall/createorder.html" + window.location.search;
+            var paramArray =
+            {
+                title: '选择地址',
+                url: '/mall/addresslist.html?uid=' + uid + '&position=createorder&callbackurl=' + encodeURIComponent(callbackurl),
+                urlType: 1,
+                close: false,
+                children: [{
+                    title: '添加地址',
+                    url: 'addAddress()',
+                    urlType: '2'
+                }]
+            };
+            appRedirect(paramArray);
+        }
+        //添加地址
+        function addAddress() {
+            var callbackurl = "/mall/createorder.html" + window.location.search;
+            var paramArray =
+            {
+                title: '添加地址',
+                url: '/mall/addaddress.html?uid=' + uid + '&position=createorder&callbackurl=' + encodeURIComponent(callbackurl),
+                urlType: 1,
+                close: false,
+                children: [{
+                    title: '保存',
+                    url: 'addAddress()',
+                    urlType: '2'
+                }]
+            };
+            appRedirect(paramArray);
+        }
+
+        function selectClass() {
+            var ids = [];
+            var names = [];
+            if (!strIsNullOrEmpty(class_ids)) {
+                ids = class_ids.split(',');
+                names = class_names.split(',');
+            }
+            var param = [];
+            $.each(ids, function (i, n) {
+                param.push({ classid: n, classname: names[i] });
+            });
+            if (type == "0") {
+                // surfaceView.selectClassForJS(JSON.stringify(param));
+                bridge.callHandler('selectClassForJS', { param: param });
+            }
+            else if (type == "1") {
+                bridge.send({ selectClassForJS: param });
+            } else {
+                error('暂不支持浏览器');
+            }
+        }
+
+
+        function setClass(data) {
+            var json = eval(data);
+            var ids = [];
+            var names = [];
+            if (json) {
+                $.each(data, function (i, n) {
+                    if (n.uid != uid) {
+                        ids.push(n.classid);
+                        names.push(n.classname);
+                    }
+                });
+            }
+            class_ids = ids.toString();
+            class_names = names.toString();
+            $('#hidclassids').val(class_ids);
+            $('#div_classnames').text(strIsNullOrEmpty(class_names) ? '选择班级' : class_names);
+            changeprice();
+        }
+    </script>
+    <style type="text/css">
+        /*.choosespec {
+            width: 50px;
+            height: 50px;
+            margin: 0 5px;
+            border: 1px solid #2f1e1e;
+        }*/
+
+        /*.coloron {
+            width: 50px;
+            height: 50px;
+            margin: 0 5px;
+            border: 1px solid #ff0000;
+        }*/
+    </style>
+</head>
+<body class="pabthreerem">
+    <div id="pdes"><div class="loading">加载中...</div></div>
+    <input type="hidden" id="hidprice" />
+    <input type="hidden" id="hidscore" />
+    <input type="hidden" id="hidpricetype" />
+    <input type="hidden" id="hidaddressid" value="" />
+    <input type="hidden" id="hidpaytype" value="5" />
+    <input type="hidden" id="hidis_instalment" />
+    <input type="hidden" id="hidinstalmentcount" />
+    <input type="hidden" id="hidproduct_attr" />
+    <input type="hidden" id="hidclassids" value="" />
+    <input type="hidden" id="hidgettelcost" value="" />
+    <input type="hidden" id="hidgetflow" value="" />
+</body>
+</html>
+<script src="../js/swiper.min.js"></script>
+<script>
+    function initswip() {
+        var swiper = new Swiper('.swiper-container', {
+            pagination: '.swiper-pagination',
+            paginationClickable: true,
+
+        });
+    }
+
+</script>

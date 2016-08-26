@@ -1,0 +1,328 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>忘记密码</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script src="../js/initnumber.js"></script>
+    <script>
+
+     
+        var uid = request("uid");
+        var position = request("position");
+        var callbackurl = request('callbackurl');
+        var issend = false;
+        $(document).ready(function () {
+            $("#rule").hide();
+            //$("#card_number").bankInput();
+         
+            if (type == "1" || type == 0) {
+                $("#btnback").hide();
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    bridge.registerHandler("onClickBack", function (data, responseCallback) {
+                        var index = $(".showstep").attr("index");
+                        var close = (index == 1 || index == 2) ? true : false;
+                        var array = {};
+                        if (close) {
+                            array = {
+                                title: null,
+                                url: null,
+                                urlType: 0,
+                                close: false,
+                                children: []
+                            }
+                            responseCallback(array);
+                        } else {
+                            onClickBack();
+                        }
+
+                        //responseCallback(close);
+                    });
+                }, false);
+            }
+
+
+     
+         
+            //提交手机验证码
+            $("#btnOk").click(function () {
+                if ($(this).css("opacity") != "1") {
+                    error("请获取验证码！");
+                    return;
+                }
+                else {
+
+                    var code = $("#txtCode").val();
+                    if (code == "") {
+                        error("请输入手机验证码");
+                        return;
+                    }
+                    //var phone = $("#txtphone").val();
+                    pop('正在验证手机号码');
+                    $.get(domain + 'api/mall/CheckSendValidateCode', {
+                        uid: uid,
+                        code: code
+                    }, function (data) {
+                        clearpop();
+                        if (data.flag == "true") {
+                     
+                            //银行卡添加成功，设置密码
+                            currentStep(2);
+                            loadkyboard('sblock', 'txtnewpwd1', 'divnewpwd1');
+
+                        }
+                        else {
+                            error(data.msg);
+                        }
+
+                    }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                        clearpop();
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    });
+                }
+
+            });
+            $("#btnfourth").click(function () {
+                var pwd = $("#txtnewpwd1").attr("oldvalue");
+                if (pwd.length != 6) {
+                    error("请输入6位数字密码");
+                    return;
+                }
+                currentStep(3);
+                loadkyboard('sblock', 'txtnewpwd2', 'divnewpwd2');
+            });
+            $("#btnPwdOK").click(function () {
+                var pwd1 = $("#txtnewpwd1").attr("oldvalue");
+                var pwd2 = $("#txtnewpwd2").attr("oldvalue");;
+                if (pwd1 == pwd2) {
+
+                    //设置密码
+                    $.ajax({
+                        type: "get",
+                        async: true,
+                        url: domain + "api/Customer/SetUserPwd",
+                        data: {
+                            uid: uid,
+                            pwd: pwd1
+                        },
+                        error: function (XMLHttpRequest, textStatus, errorThrown) {
+                            error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                        }, success: function (data) {
+                            if (data.flag) {
+
+                                redirectUrl();
+                            }
+                            else {
+                                error(data.msg);
+                            }
+                        }
+                    });
+                } else {
+                    error("两次密码输入不一致");
+                    currentStep(4);
+                    $("#txtnewpwd1").val('').attr("oldvalue", "");
+                    $("#txtnewpwd2").val('').attr("oldvalue", "");
+                    $("#divnewpwd2").text('');
+                    $("#divnewpwd1").text('');
+                    loadkyboard('sblock', 'txtnewpwd1', 'divnewpwd1');
+                    return;
+                }
+            });
+
+
+            //记录指令
+            $.get(domain + 'api/mall/MobileUserActionRecordAdd', {
+                uid: uid,
+                cmd: 124,
+                par_cmd: 0
+            }, function (json) {
+            });
+        });
+
+
+
+        function redirectUrl() {
+                var array = {
+                    title: '积分设置',
+                    url: '/customer/scoreset.html?uid=' + uid,
+                    urlType: 1,
+                    close: true,
+                    children: []
+                };
+                appRedirect(array);
+        }
+        var s = 90;
+
+        function runtime() {
+            $("#stime").html('<span  class="inline lh22">' + s + 's</span>');
+            s--;
+            var t = setTimeout(runtime, 1000);
+            if (s < 0) {
+                clearTimeout(t);
+                $("#stime").html('<span  onclick="sendcode()" class="inline lh22">重新发送</span>');
+                //$("#btnOk").attr("disabled", true);
+                $("#btnOk").css("opacity", '0.6');
+            }
+        }
+
+        function sendcode() {
+            $.ajax({
+                url: domain + "api/mall/SendValidateCode",
+                data: {
+                    uid: uid
+                },
+                async: false,
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (obj) {
+                    if (obj.flag == "true") {
+                        issend = true;
+                        $("#spanphone").html('验证码短信已发送至' + obj.phone);
+                        s = 90;
+                        runtime();
+                        $("#btnOk").attr("disabled", false);
+                        $("#btnOk").css("opacity", '1');
+                    }
+                    else {
+                        $("#spanphone").html('验证码短信发送至' + obj.phone + '失败');
+                        error(obj.msg);
+                        $("#stime").html('<span  onclick="sendcode()" class="inline lh22">重新发送</span>');
+                       // $("#btnOk").attr("disabled", true);
+                        $("#btnOk").css("opacity", '0.6');
+                    }
+                }
+            });
+        }
+
+        //当前显示的index
+        function currentStep(index) {
+            closekeyboard();
+            $(".step").removeClass("showstep").addClass("hidestep");
+            $(".step[index=" + index + "]").removeClass("hidestep").addClass("showstep");
+           if (index == 1) {
+                var paramArray =
+                {
+                    title: '手机号验证',
+                    children: []
+                };
+                resetTitle(paramArray);
+            }
+            else if (index == 2) {
+                var paramArray =
+                {
+                    title: '设置支付密码',
+                    children: []
+                };
+                resetTitle(paramArray);
+            }
+        }
+        function onClickBack() {
+            var index = $(".showstep").attr("index");
+            if ((index == 1 || index == 2) && (type == "0" || strIsNullOrEmpty(type))) {
+                redirectUrl();
+            }
+            else {
+                var newIndex = parseInt(index) - 1;
+                currentStep(newIndex);
+                if ($('.step[index=' + newIndex + ']>.sblock').length > 0) {
+                    var textId = $('.step[index=' + newIndex + ']>.sblock>input').attr('id');
+                    var divId = $('.step[index=' + newIndex + ']>.sblock>div').attr('id');
+                    loadkyboard('sblock', textId, divId);
+                }
+            }
+        }
+
+        function mltweenty(a) {
+            var this_ = $(a);
+            var str = this_.text();
+            str = str.replace(/\sg/, '');
+            console.log(str.length);
+            if (str.length < 20) {
+                if (str.length % 4 == 0) {
+                    str += ' ';
+                    console.log(str + ':' + str.length);
+                    this_.text(str);
+                    console.log(this_.text() + ':' + (this_.text()).length);
+                    this_.focusout();
+                    //str.length--;
+                }
+
+            } else if (str.length == 20) {
+                this_.removeClass('wr');
+            }
+
+        }
+
+        function bankCardAddRule() {
+            var array = {
+                title: '用户协议',
+                url: '/customer/bankcardaddrule.html',
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+
+    </script>
+    <style type="text/css">
+        .showstep {
+            display: block;
+        }
+
+        .hidestep {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <input type="button" id="btnback" onclick="onClickBack()" value="返回" />
+    <div class="step" index="1">
+        <div class="indentb mtonerem">
+            <span id="spanphone"></span>
+        </div>
+        <div class="wb bgblock widper100  ">
+            <div class="widper70">
+                <input id="txtCode" class="bgitem indentb number over-hide mt2" placeholder="请填写验证码" type="number" maxlength="4" value="" />
+            </div>
+            <div class="widper30 pat3 ">
+                <div class=" btnyellow tinybtn  tcenter  p14  " id="stime"><span class="inline lh22" onclick="sendcode()">发送验证码</span></div>
+            </div>
+        </div>
+        <div class="tcenter">
+            <input id="btnOk" class="btn btnbig mtb10 btnwhite" type="button" disabled="disabled" value="完成" />
+        </div>
+    </div>
+    <div class="step hidestep" index="2">
+        <div class="tcenter patb">
+            请设置支付密码（6位数字）
+        </div>
+        <div class="mtonerem sblock ">
+            <input class="inputpwd numberpwd hide" type="tel" id="txtnewpwd1"  sbtn="btnfourth" oldvalue="" maxlength="6" />
+            <div class="inputpwd divpwd " id="divnewpwd1"></div>
+        </div>
+        <div class="tcenter">
+            <input id="btnfourth" class="btn btnbig btnwhite mtb10" type="button" value="下一步" />
+        </div>
+    </div>
+    <div class="step hidestep" index="3">
+        <div class="tcenter patb">
+            请再次填写确认密码
+        </div>
+        <div class="mtonerem sblock ">
+            <input class="inputpwd numberpwd hide" type="tel" id="txtnewpwd2" sbtn="btnPwdOK" oldvalue="" maxlength="6" />
+            <div class="inputpwd divpwd " id="divnewpwd2"></div>
+        </div>
+        <div class="tcenter">
+            <input id="btnPwdOK" class="btn btnbig btnwhite mtb10" type="button" value="完成" />
+        </div>
+    </div>
+</body>
+</html>

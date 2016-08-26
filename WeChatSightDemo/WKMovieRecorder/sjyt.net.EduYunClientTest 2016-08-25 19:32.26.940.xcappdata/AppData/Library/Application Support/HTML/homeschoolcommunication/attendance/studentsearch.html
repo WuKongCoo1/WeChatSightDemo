@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>搜索</title>
+    <link href="../../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../../js/jquery-1.10.2.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script>
+        var uid = request('uid');
+        var userType = request('user_type');
+        var schoolId = request('school_id');
+        var classId = request('class_id');
+        var attType = request('att_type');
+        var attDate = request('att_date');
+
+        var uidChild = 0;
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            $('#txt_real_name').focus();
+            document.title = attType == 1 ? '日常考勤' : attType == 2 ? '宿舍考勤' : '手动考勤';
+        });
+        function search() {
+            var realName = $.trim($('#txt_real_name').val());
+            if (strIsNullOrEmpty(realName)) {
+                error('请输入学生姓名');
+                return;
+            }
+            $.get(domain + 'api/HomeSchoolCommunication/GetStudentListByName', {
+                realName: realName,
+                uid: uid,
+                userType: userType,
+                schoolId: schoolId,
+                classId: classId
+            }, function (json) {
+                if (json.operationStatus == 1) {
+                    if (json.total > 0) {
+                        var count = json.total;
+                        if (count == 1) {
+                            uidChild = json.rows[0].uid;
+                            if (attType != 3) {
+                                var paramArray =
+                                {
+                                    title: attType == 1 ? '日常考勤' : attType == 2 ? '宿舍考勤' : '手动考勤',
+                                    url: '/HomeSchoolCommunication/attendance/studentattendancelog.html?uid=' + uid + '&user_type=' + userType + '&school_id=' + schoolId + '&class_id=' + classId + '&att_date=' + attDate + '&att_type=' + attType + "&uid_child=" + uidChild + '&child_class_id=' + json.rows[0].class_id+"&gen_uid="+json.rows[0].genearch_uid,
+                                    urlType: 1,
+                                    close: false,
+                                    children: []
+                                };
+                                appRedirect(paramArray);
+                            }
+                            else {
+                                var paramArray =
+                                {
+                                    title: json.rows[0].real_name,
+                                    url: '/HomeSchoolCommunication/manualattendance/studentloglist.html?uid=' + uid + '&user_type=' + userType + '&school_id=' + schoolId + '&class_id=' + classId + '&att_date=' + attDate + '&att_type=' + attType + "&uid_child=" + uidChild + '&child_class_id=' + json.rows[0].class_id + "&gen_uid=" + json.rows[0].genearch_uid,
+                                    urlType: 1,
+                                    close: false,
+                                    children: []
+                                };
+                                appRedirect(paramArray);
+
+                            }
+                        } else {
+                            var html = '';
+                            $.each(json.rows, function (i, n) {
+                                html += '<li class="bgitem mlper6" uid="' + n.uid + '" genearch_uid="' + n.genearch_uid + '" class_id="' + n.class_id + '" onclick="checkStudent(this,\'' + n.real_name + '\')">';
+                                html += '<span>' + n.real_name + '</span>';
+                                html += '<span>(' + n.class_name + ')</span>';
+                                html += '</li>';
+                            });
+                            $('#ul_student').html(html);
+                        }
+
+                    } else {
+                        error('学生[' + realName + ']不存在。');
+                    }
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function checkStudent(obj,name) {
+            uidChild = $(obj).attr('uid');
+            var childClassId = $(obj).attr('class_id');
+            var genearch_uid = $(obj).attr('genearch_uid');
+            if (attType != 3) {
+                var paramArray =
+                {
+                    title: attType == 1 ? '日常考勤' : attType == 2 ? '宿舍考勤' : '手动考勤',
+                    url: '/HomeSchoolCommunication/attendance/studentattendancelog.html?uid=' + uid + '&user_type=' + userType + '&school_id=' + schoolId + '&class_id=' + classId + '&att_date=' + attDate + '&att_type=' + attType + "&uid_child=" + uidChild + '&child_class_id=' + childClassId + "&gen_uid=" + genearch_uid,
+                    urlType: 1,
+                    close: false,
+                    children: []
+                };
+                appRedirect(paramArray);
+            } else {
+                var paramArray =
+                {
+                    title: name,
+                    url: '/HomeSchoolCommunication/manualattendance/studentloglist.html?uid=' + uid + '&user_type=' + userType + '&school_id=' + schoolId + '&class_id=' + classId + '&att_date=' + attDate + '&att_type=' + attType + "&uid_child=" + uidChild + '&child_class_id=' + childClassId + "&gen_uid=" + genearch_uid,
+                    urlType: 1,
+                    close: false,
+                    children: []
+                };
+                appRedirect(paramArray);
+            }
+
+        }
+    </script>
+</head>
+<body>
+    <div class="searchdiv wb">
+        <div class="widper80">
+            <input class="bgiconitem last indentb" type="text" id="txt_real_name" placeholder="请输入学生姓名" />
+        </div>
+        <div class="widper20 tright">
+            <button class="searbtn" type="button" onclick="search()"></button>
+        </div>
+    </div>
+    <ul id="ul_student"></ul>
+</body>
+</html>

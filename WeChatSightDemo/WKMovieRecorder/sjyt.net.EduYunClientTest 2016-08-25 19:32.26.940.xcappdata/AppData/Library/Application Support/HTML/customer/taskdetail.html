@@ -1,0 +1,371 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>任务详情</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <link href="../css/jalendar.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script src="../js/jalendar_canlender.js"></script>
+    <style>
+        .widthree:nth-child(3n+1) {
+          box-shadow:0px 0px 0px rgba(255,255,255,0);
+        }
+        .widthree:nth-last-child(n+1) {
+            box-shadow: -1px 0px 0px  #e6e6e6 inset;
+        }
+        .widthree:nth-child(3n) {
+            box-shadow: 0px 0px 0px rgba(255,255,255,0);
+        }
+        #div_continue_task {
+         -webkit-tap-highlight-color:rgba(0,0,0,0);
+        }
+        </style>
+</head>
+<body class="bgwhite pabthreerem">
+    <!--<article>
+        <div id="myId3" class="jalendar mid nitem">
+        </div>
+    </article>-->
+    <div id="div_other_task" class="bggray">
+        <div id="div_task_intro" class="bgwhite patb mtb10 indentb bb1 bt1 wb">
+            <div class="widper10 tcenter"><img class=" icon  mt2" src="../images/discribe.png" /></div>
+            <div class="widper90 icondis mt2 c-line">任务描述：...</div>
+        </div>
+        <div id="div_task_progress" class="bgwhite patb mtb10 indentb bb1 bt1 wb">
+            <div class="widper10  tcenter"><img class=" icon  mt2" src="../images/progress.png" /></div>
+            <div class="widper90 icondis mt2 c-line">完成进度：...</div>
+        </div>
+        <div id="div_task_reward" class="bgwhite patb mtb10 indentb bb1 bt1 wb">
+            <div class="widper10  tcenter"><img class=" icon  mt2" src="../images/get.png" /></div>
+            <div class="widper90 icondis mt2 c-line">获得奖励：...</div>
+        </div>
+    </div>
+    <div id="div_continue_task" class="hide">
+        <div id="div_task_intro1"></div>
+        <article>
+            <div id="div_calendar" class="jalendar mid nitem"></div>
+        </article>
+    </div>
+    <button id="btn_go_task">做任务</button>
+    <button id="btn_task_rule" class="hide">规则</button>
+    <script>
+        //签到模块
+        var uid = request('uid');
+        var task_id = request('task_id');
+        var task_type = request('task_type');
+        var is_canlenda_inited = false;
+        var task_rule = '';
+        var enum_task_id = 0;
+        $(function () {
+            //alert(location.href)
+            //
+            var hei_ = $(window).height();
+            $('body').css('minHeight', hei_);
+            $('#div_other_task').css('minHeight', hei_)
+            if (task_type == 3) { //持续任务
+                $('#div_continue_task').removeClass('hide');
+                $('#div_other_task').addClass('hide');
+            }
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function(event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    bindTask();
+                }, false);
+            } else {
+                bindTask();
+            }
+        });
+
+        function bindTask() {
+            //加载任务详情
+            $.ajax({
+                url: domain + 'api/Customer/GetTaskDetail',
+                async: false,
+                type: 'get',
+                dataType: 'json',
+                data: {
+                    taskId: task_id,
+                    uid: uid
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (json) {
+                    if (json.operationStatus == 1) {
+                        var model = json.model[0];
+                        var task_type_new = model.task_type;
+                        if (task_type != task_type_new) {
+                            if (task_type_new == 3) { //持续任务
+                                $('#div_continue_task').removeClass('hide');
+                                $('#div_other_task').addClass('hide');
+
+                            } else {
+                                $('#div_other_task').removeClass('hide');
+                                $('#div_continue_task').addClass('hide');
+
+                            }
+                        }
+                        task_type = task_type_new;
+                        task_rule = model.task_intro;
+                        enum_task_id = model.enum_task_id;
+
+                        if (task_type == 3) {
+                            //error(type)
+                            //持续任务
+                            if (!strIsNullOrEmpty(type) && (type == 0 || type == 1)) {
+                                var paramArray = {
+                                    title: model.task_name,
+                                    children: [
+                                        {
+                                            title: "规则",
+                                            url: 'showTaskRule()',
+                                            urlType: 2
+
+                                        }
+                                    ]
+                                };
+                                resetTitle(paramArray);
+                            } else {
+                                $('#btn_task_rule').removeClass('hide').bind('click', function () {
+                                    showTaskRule();
+                                });
+                            }
+                        }
+                        if (model.is_finish == 1) {
+                            $('#btn_go_task').text(enum_task_id == 18 ? "已签到" : "已完成").unbind('click').addClass('hide');
+                            $('#btn_go_task').addClass();
+                        } else {
+                            $('#btn_go_task').text(enum_task_id == 18 ? "" : "做任务").bind('click', function () {
+                                gotask();
+                            });
+                            if (enum_task_id == 18) {
+                                $('#btn_go_task').addClass('resign resign_icon');
+                            } else {
+                                $('#btn_go_task').addClass('resign');
+                            }
+                        }
+                        var today = new Date();
+                        var month = today.getFullYear() + '-' + (today.getMonth() + 1);
+                        var day = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDay();
+
+                        if (task_type == 3) {
+                            initCanlenda();
+                            //获取任务日历
+                            getTaskCalendar(task_id, month);
+                        } else {
+                            $('#div_task_intro').find('.icondis').html('任务描述:<span class="g-font">' + model.task_intro + '</span>');
+                            var pro = [];
+                            pro = model.progress_str.split('/');
+                            $('#div_task_progress').find('.icondis').html('完成进度:<span class="y-font">' + pro[0] + '<span><span class="g-font">/' + pro[1] + '</span>');
+                            $('#div_task_reward').find('.icondis').html('获得奖励:<span class="y-font"> 积分 +' + model.get_score + '</span>');
+                        }
+                    } else {
+                        error(json.message);
+                    }
+                }
+            });
+        }
+
+        function showTaskRule() {
+            choiceone(task_rule, "我知道了");
+        }
+        function initCanlenda() {
+            if (!is_canlenda_inited) {
+                $('#div_calendar').canlendar();
+                //var strMes = [];
+                ////typ=1是签到日期,type=2是有奖品的日期
+                //strMes = [
+                // { "date": "11/6/2016", "type": "1", "title": " " },
+                // { "date": "12/6/2016", "type": "1", "title": "积分+50" },
+                // { "date": "13/6/2016", "type": "1", "title": " " },
+                // { "date": "14/6/2016", "type": "1", "title": "30元充值卡" },
+                // { "date": "15/6/2016", "type": "1", "title": "10元充值卡" },
+                // { "date": "16/6/2016", "type": "1", "title": "积分+50,20M流量" },
+                // { "date": "17/6/2016", "type": "2", "title": "积分+50,20M流量" },
+                //]
+                //var html = '';
+                //for (var i = 0 ; i < strMes.length ; i++) {
+                //    html += "<div class='added-event' data-date=" + strMes[i].date + " data-type=" + strMes[i].type + " data-title=" + strMes[i].title + "></div>"
+                //    //html += "<div class='gift resign' data-date=" + strMes[i].resigndate + " data-title=" + strMes[i].title + "></div>"
+                //}
+
+                //$('#div_calendar').append(html);
+                //$('#div_calendar').mark();
+                $('.nxt-m').click(function () {
+                    //'2016-06'
+                    var next_month = $('#div_calendar').nextmonth();
+                    getTaskCalendar(task_id, next_month);
+                    $('#myId3').mark();
+                });
+                $('.prv-m').click(function () {
+                    var prev_month = $('#div_calendar').prvmonth();
+                    getTaskCalendar(task_id, prev_month);
+                });
+                is_canlenda_inited = true;
+            }
+        }
+        var style = 'style="background-color:rgb(254,249,236);border:1px solid #e6e6e6" '
+        //获取任务日历，month：年月
+        function getTaskCalendar(task_id, month) {
+            $.ajax({
+                url: domain + 'api/Customer/GetTaskCalendar',
+                async: false,
+                type: 'get',
+                dataType: 'json',
+                data: {
+                    taskId: task_id,
+                    uid: uid,
+                    month: month
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (json) {
+                    if (json.operationStatus == 1) {
+                        if (json.rows && json.rows.length > 0) {
+                            var strMes = [];
+                            $.each(json.rows, function (i, n) {
+                                var taskDate = convertStringToDate(n.task_date);
+                                var today = convertStringToDate(convertDateToString(new Date()));
+                                var title = '';
+                                title += '<div class="widper96  acenter" ' + style + '>'
+                                if (!strIsNullOrEmpty(n.reward)) {
+                                    var array = n.reward.split('|');
+                                    if (array.length > 0) {
+                                        for (var x = 0; x < array.length; x++) {
+                                            if (!strIsNullOrEmpty(array[x])) {
+                                                var m = JSON.parse(array[x]);
+
+                                                if (m.score) {//获得积分
+                                                    title += '<div class="widthree fleft tcenter  bb1 patb heisixrem " style="overflow-y:hidden"> ';
+                                                    title += '<div class="widper100 nowrap"><img class="heifourrem radius4" src="../images/gold.jpg" alt="积分" /> </div>'
+                                                    title += '<div class="g-font p14">积分 +' + m.score + '</div></div>';
+
+                                                } else if (m.product_id) {
+                                                    //获得物品
+                                                    title += '<div class="widthree fleft tcenter blshadow  bb1 patb heisixrem ">';
+                                                    if (!strIsNullOrEmpty(m.product_img)) {
+                                                        title += '<div class="widper100 nowrap"><img class="heifourrem radius4" src=\'' + m.product_img + '\'/></div>';
+
+                                                    } else {
+                                                        title += '<div class="widper100 nowrap"><img class="heifourrem radius4" src="../images/prise.jpg"/></div>';
+                                                    }
+                                                    title += '<div class="g-font p14 ">' + m.product_name;
+                                                    title += '*' + m.quality + '</div>';
+                                                    title += '</div>';
+                                                }
+
+                                            }
+
+                                        }
+                                    }
+
+                                }
+                                title += '<div class="clear"></div>'
+                                title += '</div>'
+                                //console.log(n.task_date + ': ' + title)
+                                if (taskDate < today && n.is_finish == 1) {
+                                  //  console.log(n.task_date + ': ' + 1);
+                                    strMes.push({
+                                        date: formatDateStr(n.task_date),
+                                        type: 1,
+                                        title: title
+                                    });
+                                } else if (taskDate >= today) {
+                                  //  console.log(n.task_date + ': ' + (convertDateToString(today) && n.is_finish == 1 ? 1 : 2));
+                                    strMes.push({
+                                        date: formatDateStr(n.task_date),
+                                        type: convertDateToString(taskDate) == convertDateToString(today) && n.is_finish == 1 ? 1 : 2,
+                                        title: title
+                                    });
+                                }
+                            });
+                            var html = '';
+                            for (var i = 0 ; i < strMes.length ; i++) {
+                                html += "<div class='added-event' data-date=" + strMes[i].date + " data-type=" + strMes[i].type + " >"
+                                html += "<div class='data-title '>" + strMes[i].title + "</div>"
+                                html += "</div>";
+                                // console.log(strMes[i].title);
+                                //html += "<div class='gift resign' data-date=" + strMes[i].resigndate + " data-title=" + strMes[i].title + "></div>"
+                            }
+                            $('#div_calendar').append(html);
+                            $('#div_calendar').mark();
+                           // $('#div_calendar').slide();
+                        }
+                    }
+                }
+            });
+        }
+        function gotask() {
+            //1	登录
+            //2	邀请TA人注册
+            //3	完善个人资料
+            //4	布置家庭作业
+            //5	发布学校通知
+            //6	发布学校活动
+            //7	发布考试成绩
+            //8	发布成长足迹
+            //9	成长足迹评论
+            //10 成长足迹点赞
+            //11 赠送礼物
+            //12 购买商品
+            //13 资讯评论/分享
+            //14 APP下载
+            //15 邀请TA人加入班级
+            //16 邀请TA人加入亲友圈
+            //17 用户注册
+            //18 签到
+            if (enum_task_id == 2 || enum_task_id == 3 || enum_task_id == 4 || enum_task_id == 5 || enum_task_id == 6
+                || enum_task_id == 7 || enum_task_id == 8 || enum_task_id == 9 || enum_task_id == 10 || enum_task_id == 11
+                || enum_task_id == 12 || enum_task_id == 13 || enum_task_id == 14) {
+                if (type == "0") {
+                    // surfaceView.goTask(id);
+                    bridge.callHandler('goTask', { id: enum_task_id });
+                } else if (type == "1") {
+                    bridge.send({ goTask: enum_task_id });
+                }
+            } else {
+                if (enum_task_id == 18) {  //签到
+                    doTask(enum_task_id, task_id);
+                } else {
+                }
+
+            }
+        }
+        //做任务
+        function doTask() {
+            $.ajax({
+                url: domain + 'api/Customer/DoTask',
+                async: false,
+                type: 'get',
+                dataType: 'json',
+                data: {
+                    enumTaskId: enum_task_id,
+                    uid: uid
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (json) {
+                    //var json = $.parseJSON(data);
+                    if (json.operationStatus == 1) {
+                        if (json.res == 4) {
+                            $('#btn_go_task').text(enum_task_id == 18 ? "已签到" : "已完成").unbind('click').addClass('hide');
+                        } else {
+                            error(json.message);
+                        }
+                        bindTask();
+                    } else {
+                        error(json.message);
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

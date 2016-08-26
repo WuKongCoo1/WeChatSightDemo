@@ -1,0 +1,181 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>积分详情</title>
+    <link href="../../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../../js/jquery-1.10.2.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script>
+        var exam_id = request("exam_id");
+        var class_id = request("class_id");
+        var can_remind_count = 0;
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            if (type) {
+                $("#btnremindall").hide();
+            }
+            GetList();
+        });
+
+        function GetList() {
+            $.ajax({
+                type: "get",
+                async: true,
+                url: domain + "api/Customer/ExamRemindDetail",
+                data: {
+                    exam_id: exam_id,
+                    class_id: class_id,
+                    uid: request("uid")
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                }, success: function (data) {
+                    var listStr = "";
+                    $("#title").append('总计发送<span class="y-font">' + data.total + '</span>人，<span  class="y-font">' + data.read + '</span>人已查看，<span  class="y-font">' + (data.total - data.read) + '</span>人未查看');
+                    can_remind_count = data.can_remind_count;
+                    for (var i = 0; i < data.rows.length; i++) {
+                        if (data.rows.length - i == 1) {
+                            listStr += "<div class='adritem mlper6 wb last'>";
+                        } else {
+                            listStr += "<div class='adritem mlper6 wb'>";
+                        }
+                        listStr += "<div class='widper70'>"
+                        if (!strIsNullOrEmpty(data.rows[i].real_name)) {
+                            listStr += "<div class='g-line'>" + data.rows[i].real_name + "</div>";
+                        }
+                        if (!strIsNullOrEmpty(data.rows[i].child_name)) {
+                            listStr += "<div class='c-line g-font p15'>" + data.rows[i].child_name + "</div>";
+                        }
+                        listStr += "</div>";
+                        listStr += "<div class='widper30 tcenter'>";
+                        if (data.rows[i].status == "0") {
+                            var style = "";
+                            var text = "提醒查看";
+                            if (data.rows[i].cou >= 5) {
+                                style = " style='border-color:#ccc;background-color:#eaeaea;color:#fafafa;'";
+                                text = "未读";
+                            }
+                            listStr += "<input class='tinybtn btnyellow mtonerem' " + style + " name='inputs' ids='" + data.rows[i].uid + "_" + data.rows[i].uid_child + "' type=\"button\" onclick=\"Remind($(this)," + data.rows[i].uid + "," + data.rows[i].uid_child + "," + data.rows[i].exam_id + ","
+                                            + data.rows[i].school_id + "," + data.rows[i].class_id + ")\" value=\"" + text + "\" /> ";
+                        }
+                        else {
+                            listStr += "<div class='g-font oneline mt3'>已查看 </div>";
+                        }
+                        listStr += "</div>";
+                        listStr += "</div>";
+                    }
+                    $("#list").append(listStr);
+                }
+            });
+        }
+
+        function Remind(obj, uid, uid_child, exam_id, school_id, class_id) {
+            pop('正在提醒');
+            $.ajax({
+                type: "get",
+                async: true,
+                url: domain + "api/Customer/ExamMesPushAdd",
+                data: {
+                    uid: uid,
+                    uid_child: uid_child,
+                    exam_id: exam_id,
+                    status: 0,
+                    school_id: school_id,
+                    class_id: class_id,
+                    user_type: 1,
+                    title: "",
+                    context: "您有一条<" + getMesTypeName(4) + ">还没有阅读哦，快去看看吧~~",
+                    message_type_id: 4,
+                    login_uid: request("uid")
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    clearpop();
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                }, success: function (data) {
+                    clearpop();
+                    if (data.res == "1") {
+                        error("提醒成功");
+                        var remind_count = data.remind_count;
+                        if (remind_count >= 5) {
+                            $(obj).attr("disabled", true);
+                            $(obj).removeClass("btnyellow");
+                            $(obj).addClass("undefault");
+                            $(obj).attr("value", "未读");
+                        }
+                    }
+                    else if (data.res == "2") {
+                        $(obj).attr("disabled", true);
+                        $(obj).removeClass("btnyellow");
+                        $(obj).addClass("undefault");
+                        $(obj).attr("value", "未读");
+                        error("今日提醒次数已达到上限");
+                    }
+                    else {
+                        error("提醒失败");
+                    }
+                }
+            });
+
+        }
+
+        function remindall() {
+            if (can_remind_count == 0) {
+                //error('全部已经查看');
+                return;
+            }
+            pop('正在提醒');
+            $.ajax({
+                type: "get",
+                async: true,
+                url: domain + "api/Customer/ExamPushAddAll",
+                data: {
+                    original_id: exam_id,
+                    context: "您有一条<" + getMesTypeName(4) + ">还没有阅读哦，快去看看吧~~",
+                    class_id: class_id,
+                    user_type: 1,
+                    login_uid: request("uid")
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                    clearpop();
+                }, success: function (data) {
+                    clearpop();
+                    var cant_remind_ids = data.cant_remind_ids;
+                    if (!strIsNullOrEmpty(cant_remind_ids)) {
+                        $("[name=inputs]").each(function () {
+                            var ids = $(this).attr("ids");
+                            if (cant_remind_ids.indexOf(ids) >= 0) {
+                                $(this).attr("disabled", true);
+                                $(this).removeClass("btnyellow");
+                                $(this).addClass("undefault");
+                                $(this).attr("value", "未读");
+                            }
+                        });
+                    }
+                    can_remind_count = data.can_remind_count;
+                    if (data.res == "1") {
+                        error("提醒成功");
+                    }
+                    else {
+                        error("提醒失败");
+                    }
+                }
+            });
+        }
+
+    </script>
+</head>
+<body>
+    <input type="button" id="btnremindall" value="全部提醒" onclick="remindall()" />
+    <div id="title" class="tcenter mtonerem"></div>
+    <div id="list" class="bgblock mtonerem"></div>
+</body>
+</html>

@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>切换班级</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        var uid = request('uid');
+        var userType = request('user_type');
+        var schoolId = request('school_id');
+        var classId = request('class_id');
+        $(function () {
+            var windowWidth = $(window).width();
+            var modelWidth = windowWidth / 2 - 30;
+            $('.model').css({
+                width: modelWidth
+            });
+
+            //获取当前储存的身份，若没有储存身份，则使用传进来的参数
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+
+                    bridge.callHandler("getUserInfo", {}, function (data) {
+                        if (!strIsNullOrEmpty(data)) {
+                            if (type == "0") {
+                                data = JSON.parse(data);
+                            }
+                            userType = data.user_type;
+                            schoolId = data.school_id;
+                            classId = data.class_id;
+                        }
+                    })
+                }, false);
+            }
+            //else if (type == "0") {
+
+            //    if (type == "0") {
+            //        document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+            //            bridge = event.bridge;
+            //        }, false);
+            //        // var data = surfaceView.getUserInfo();
+            //        var data = bridge.callHandler('getUserInfo');
+            //        if (!strIsNullOrEmpty(data)) {
+            //            data = $.parseJSON(data);
+            //            userType = data.user_type;
+            //            schoolId = data.school_id;
+            //            classId = data.class_id;
+            //        }
+            //    }
+            //}
+
+
+
+            $.get(domain + 'api/HomeSchoolCommunication/GetChoiceIdentity',
+                {
+                    uid: uid,
+                    select_type: request("select_type")
+                },
+                function (json) {
+                    var html = '';
+                    $.each(json.rows, function (i, n) {
+                        html += '<div class="model" onclick="choiceIdentity(this)" schoolname="' + (strIsNullOrEmpty(n.school_name) ? "" : n.school_name) + '" classname="' + (!strIsNullOrEmpty(n.class_name) ? n.class_name : n.class_remark) + '" school_id="' + (strIsNullOrEmpty(n.school_id) ? "0" : n.school_id) + '" class_id="' + (strIsNullOrEmpty(n.class_id) ? "0" : n.class_id) + '" user_type="' + n.user_type + '" class_creator="' + (strIsNullOrEmpty(n.class_creator) ? '' : n.class_creator) + '">';
+                      //  html += '<span class="user_type">' + (n.user_type == 0 || n.user_type == 4 ? '老师' : '家长') + '</span>';
+                        if (n.unread_count > 0) {
+                            html += '<span class="redpoint"></span>';
+                            //html += '<span class="inline radius unread" style="display: inline;">.</span>';
+                        }
+                        html += '<div style="margin-top:1.5rem; text-align: center;">';
+                        if (n.user_type == 0 || n.user_type == 4) {
+                            if (!strIsNullOrEmpty(n.school_id) && n.school_id != 0) {
+                                html += '<label class="bold schoolname">' + n.school_name + '</label>';
+                            }
+                            html += '<div class="wb widper100 mt10">'
+                            html += '<div class="widper47">'
+                            // html += '<span class="user_type">' + (n.user_type == 0 || n.user_type == 4 ? '老师' : '家长') + '</span>';                   
+                                html += '<img class="widper70" src="../images/teacher_nochoice.png" alt="老师"/>'
+                           html += '</div>'
+                            html += '<div class="widper53 tleft">'
+                            if (!strIsNullOrEmpty(n.class_id) && n.class_id != 0) {                                              
+                                html += '<label>' + (!strIsNullOrEmpty(n.class_name) ? n.class_name : n.class_remark) + '</label>';
+                                html += '<label class="mt10">' + n.class_id + '</label>';
+                            } else {
+                                html += '<label  class="mt10">' + n.school_id + '</label>';
+                            }
+                            html += '</div>'
+                            html +='</div>'
+                        } else {
+                            if (!strIsNullOrEmpty(n.school_id) && n.school_id != 0) {
+                                html += '<label  class="mt10 bold schoolname">' + n.school_name + '</label>';
+                            }
+                            html += '<div class="wb widper100 mt10">'
+                            html += '<div class="widper47">'          
+                            html += '<img class="widper70" src="../images/parents_nochoice.png" alt="家长"/>'
+                            html += '</div>'
+                            html += '<div class="widper53 tleft">'
+                            html += '<label class="mt10 ">' + (!strIsNullOrEmpty(n.class_name) ? n.class_name : n.class_remark) + '</label>';
+                            html += '<label  class="mt10">' + n.class_id + '</label>';
+                            html += '</div>'
+                            html += '</div>'
+                        }
+                        html += '</div>';
+                        html += '</div>';
+                    });
+                    $('#divIdentity .loading').remove();
+                    $('#divIdentity').prepend(html);
+
+                    if (!strIsNullOrEmpty(userType) && (!strIsNullOrEmpty(schoolId) || !strIsNullOrEmpty(classId))) {
+                        if (userType == 0 || userType == 4) {
+                            if (!strIsNullOrEmpty(classId) && classId != 0) {
+                                $('.model[user_type=' + userType + '][class_id=' + classId + ']').addClass('model_choose').find('label').eq(0).css({ 'color': '#ff9900' });
+                                $('.model[user_type=' + userType + '][class_id=' + classId + ']').find('img').attr('src', '../images/teacher_choice.png');
+
+                            } else {
+                                $('.model[user_type=' + userType + '][school_id=' + schoolId + ']').addClass('model_choose').find('label').eq(0).css({ 'color': '#ff9900' });
+                                $('.model[user_type=' + userType + '][school_id=' + schoolId + ']').find('img').attr('src', '../images/teacher_choice.png');
+                            }
+                        } else {
+                            $('.model[user_type=' + userType + '][class_id=' + classId + ']').addClass('model_choose').find('label').eq(0).css({ 'color': '#ff9900' });
+                            $('.model[user_type=' + userType + '][class_id=' + classId + ']').find('img').attr('src','../images/parents_choice.png')
+                        }
+                    }
+                }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                });
+        });
+
+        function search() {
+            var keyword = $.trim($('#txtKeyword').val());
+            keyword = keyword.toUpperCase();
+            if (!strIsNullOrEmpty(keyword)) {
+                $('.model').hide();
+                $('.model').each(function (i, n) {
+                    var text = $(this).find('label').text();
+                    text = text.toUpperCase();
+                    if (text.indexOf(keyword) != -1) {
+                        $(this).show();
+                    }
+                });
+
+            } else {
+                $('.model').show();
+            }
+        }
+
+        function choiceIdentity(obj) {
+            var schoolId = $(obj).attr('school_id');
+            var classId = $(obj).attr('class_id');
+            var userType = $(obj).attr('user_type');
+            var classCreator = $(obj).attr('class_creator');
+            var schoolname = $(obj).attr('schoolname');
+            var classname = $(obj).attr('classname');
+            if (type == "1" || type == "0") {
+                bridge.callHandler("setUserInfo", { uid: uid, school_id: schoolId, class_id: classId, user_type: userType, name: (!strIsNullOrEmpty(schoolname) ? schoolname : classname) });
+            }
+            //else if (type == "0" && 'surfaceView' in window) {
+            //    // surfaceView.setUserInfo(JSON.stringify({ uid: uid, school_id: schoolId, class_id: classId, user_type: userType }));
+            //    bridge.callHandler('setUserInfo', { uid: uid, school_id: schoolId, class_id: classId, user_type: userType });
+            //}
+
+            var rtitle = ""
+            var select_type = request("select_type");
+            if (select_type == "1") {
+                select_type = "index";
+                // rtitle = "家校沟通";
+            } else if (select_type == "2") {
+                select_type = "attendanceindex";
+                // rtitle = "校园考勤";
+            }
+            else if (select_type == "3") {
+                select_type = "notice/noticelist";
+                // rtitle = "校务通知";
+            }
+            else {
+                select_type = "index";
+            }
+            if (schoolId == "0") {
+                rtitle = classname;
+            } else {
+                rtitle = schoolname;
+            }
+            rtitle = subStr(rtitle, 12);
+            if (window.localStorage) {
+                localStorage.clear();
+            }
+
+            var array = {
+                title: rtitle,
+                url: '/HomeSchoolCommunication/' + select_type + '.html?uid=' + uid + '&user_type=' + userType + '&school_id=' + schoolId + '&class_id=' + classId + '&class_creator=' + classCreator + "&version=" + request("version"),
+                urlType: 1,
+                close: true,
+                children: []
+            };
+            appRedirect(array);
+        }
+    </script>
+</head>
+<body>
+    <div class=" bb1">
+        <div class="searchdiv wb">
+            <div class="widper80">
+                <input class="widper100 indentb" type="text" id="txtKeyword" placeholder="输入班级号/班级名称搜索" oninput="search()" />
+            </div>
+            <div class="widper20 tright">
+                <input class="searbtn" type="button" onclick="search()" />
+            </div>
+        </div>
+    </div>
+    <div id="divIdentity" class="mtonerem bgwhite">
+        <div class="loading">加载中...</div>
+        <div style="clear: both"></div>
+    </div>
+</body>
+</html>

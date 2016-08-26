@@ -1,0 +1,25 @@
+{
+    "onClickBack": [
+        "/customer/bankcard.html",
+        "/customer/bankcardadd.html",
+        "/customer/forgetpwd.html",
+        "/customer/updatepwd.html",
+        "/customer/idealmoneywithdrawals.html",
+        "/customer/idealmoneywithdrawalsfinish.html",
+        "/customer/giftdetail.html",
+        "/mall/paysuccess.html",
+        "/mall/orderdetail.html",
+        "/mall/payerror.html",
+	"/homeschoolcommunication/manualattendance/mastuattendancelogadd.html",
+	"/homeschoolcommunication/manualattendance/manualattendancereport.html?is_add=1",
+	"/homeschoolcommunication/exam/examlist.html",
+	"/homeschoolcommunication/exam/resultstatistics.html",
+	"/homeschoolcommunication/homework/homeworklist.html",
+	"/homeschoolcommunication/notice/noticelist.html",
+	"/homeschoolcommunication/active/activelist.html",
+	"/homeschoolcommunication/messagedetail.html",
+	"/customer/scoreset.html",
+	"/mall/contactor.html",
+	"/homeschoolcommunication/exam/examresultadd.html"
+    ]
+}

@@ -1,0 +1,343 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>礼物详情</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script type="text/javascript">
+
+        var id = request('id');
+        var uid = request('uid');
+        var uname = "";
+        $(document).ready(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    bridge.registerHandler("onClickBack", function (data, responseCallback) {
+                        onClickBack();
+                    });
+                }, false);
+            }
+
+            bind(id);
+        });
+        var searchType = 1;
+
+        function bind(id) {
+            if (!strIsNullOrEmpty(uname)) {
+                uname = decodeURIComponent(uname);
+            }
+            $('.loading').removeClass('hide');
+            $.get(domain + 'api/customer/GetGiftDetailByIdNew', {
+                id: id,
+                uid: uid
+            }, function (json) {
+                $('.loading').addClass('hide');
+                var html = '';
+                if (json.operationStatus == 1) {
+                    if (json.rows.length > 0) {
+                        var n = json.rows[0];
+                        if (uid == n.receive_uid) {
+                            searchType = 1;
+                            uname = n.send_name;
+                        }
+                        else {
+                            searchType = 2;
+                        }
+                        html += '<div class="bgwhite"><div class="bb1"><div class="biggiftimg bgwhite">';
+
+                        html += '<img  src="' + (strIsNullOrEmpty(n.product_img) ? '../images/default-product.png' : n.product_img) + '" /></div></div>';
+                        var quantity = "";
+                        if (n.quantity > 1) {
+                            quantity = " × " + n.quantity; +quantity
+                        }
+                        html += '<div class="wb  patb  gift_detailbg"><div class="widper50 indent p26 p18 br1 bold">' + n.name + quantity + '</div>';
+                        if (n.status == "1") {
+                            html += '<div id="giftstatus" class="widper50  indent nowrap g-font p15 ">' + eumStatus(n.status, searchType, n.product_type) + '</div>';
+                        }
+                        else {
+                            html += '<div id="giftstatus" class="widper50 indent   nowrap g-font p15">' + eumStatus(n.status, searchType, n.product_type) + '</div>';
+                        }
+
+                        html += '</div>';
+                        var pay = "";
+                        if (searchType == 1) {   // && n.status != 6 && n.status != 5没有超时退回，不是实物接收
+                            if (!strIsNullOrEmpty(n.receive_score) && n.receive_score > 0) {
+                                if (n.product_type == 1) {
+                                    if (n.status == 1) {
+                                        if (n.is_virtual_reception == 1 || n.is_virtual_reception == 2) {
+                                            pay += '<div class="c-line indent"><span class="p14 g-font">接收积分:</span><span class="y-font   ml2">+' + n.receive_score + '积分</span></div>';
+                                        }
+                                        if (n.is_virtual_reception == 0 || n.is_virtual_reception == 2) {
+                                            pay += '<div class="c-line indent"><span class="p14 g-font">接收实物:</span><span class="y-font   ml2">+0积分</span></div>';
+                                        }
+                                    }
+                                    else if (n.status == 2) {
+                                        pay += '<div class="c-line indent"> <span class="y-font">' + n.receive_score + '积分</span></div>';
+                                    }
+                                    else if (n.status == 5) {
+                                        pay += '<div class="c-line indent"> <span class="y-font">0积分</span> </div>';
+                                    }
+
+                                } else if (n.product_type == 7 || n.product_type == 8) {
+                                    if (n.status == 1) {
+                                        if (n.is_virtual_reception == 1 || n.is_virtual_reception == 2) {
+                                            pay += '<div class="c-line indent"><span class="p14 g-font">接收积分:</span><span class="y-font   ml2">+' + n.receive_score + '积分</span></div>';
+                                        }
+                                        if (n.is_virtual_reception == 0 || n.is_virtual_reception == 2) {
+
+                                            if (n.product_type == 7) {
+                                                pay += '<div class="c-line indent"><span class="p14 g-font">立即充值:</span><span class="y-font   ml2">+' + n.get_tel_cost + '元话费</span></div>';
+                                            }
+                                            else {
+                                                pay += '<div class="c-line indent"><span class="p14 g-font">立即充值:</span><span class="y-font   ml2">+' + n.get_flow + 'M流量</span></div>';
+
+                                            }
+
+                                        }
+                                    }
+                                    else if (n.status == 2) {
+                                        pay += '<div class="c-line indent"> <span class="y-font">' + n.receive_score + '积分</span></div>';
+                                    }
+                                    else if (n.status == 5 || n.status == 7) {
+                                        pay += '<div class="c-line indent"><span class="p14 g-font"></span><span class="y-font   ml2">+' + n.get_tel_cost + '元话费</span><div class="g-font">(' + n.recharge_tel.substring(0, 3) + "****" + n.recharge_tel.substring(7, n.recharge_tel.length) + ')</div></div>';
+                                    }
+                                    else {
+                                        pay += '<div class="c-line indent"><span class="p14 g-font"></span><span class="y-font   ml2">+' + n.get_flow + 'M流量</span><div class="g-font">(' + n.recharge_tel.substring(0, 3) + "****" + n.recharge_tel.substring(7, n.recharge_tel.length) + ')</div></div>';
+                                    }
+
+                                } else {
+                                    pay = '<div class="c-line indent"> <span class="y-font">' + n.receive_score + '积分</span></div>';
+                                }
+
+
+                            }
+                        } else {
+                            if (n.order_pay_type_id == 4) {
+                                pay = '<div class="c-line indent"><span class="y-font">' + n.discount + '积分</span></div>';
+                            }
+                            else {
+                                pay = '<div class="c-line indent"><span class="y-font">￥' + n.product_price + '</span></div>';
+                            }
+                        }
+                        html += '<div class="wb pab gift_detailbg"><div class=" widper50">' + pay + '</div>';
+                        if (!strIsNullOrEmpty(n.receive_closeness) && n.receive_closeness > 0) {  // && n.status != 6
+                            html += '<div class="indent  y-font c-line">亲密度 +<span class=" ">' + n.receive_closeness + '</span></div></div>';
+                        }
+                        html += ' </div>'
+                        if (!strIsNullOrEmpty(n.detail)) {
+                            html += '<div class="mtonerem mlhalf">产品详情<div class="g-font c-line p15">' + n.detail + '</div></div>';
+                        }
+                        if (n.status != 4 && n.receive_is_del != 1) {
+                            if (searchType == 2 && !strIsNullOrEmpty(n.leave_message)) {
+                                html += '<div class="widper100 wb mtonerem"><div class="g-font widper40 p15 mlhalf">我说：</div><div class="tright g-font widper55"><span class="mlonerem p14">' + convertDateTimeToStringNoSec(parseISO8601(n.send_date)) + '</span></div></div>';
+                            }
+                            else if (searchType == 1 && !strIsNullOrEmpty(n.leave_message)) {
+                                html += '<div class="wb widper100 mtonerem"><div class="g-font widper40 p14 mlhalf">' + n.send_name + '对你说：</div><div class="tright g-font widper55 p14">' + convertDateTimeToString(parseISO8601(n.send_date)) + '</div></div> </div>';
+                            }
+                            html += '<div class="giftreplay converse mtonerem  mlhalf">';
+                            html += '<div class="c-line g-font p15">' + n.leave_message + '</div>';
+                            if (searchType == 2 && !strIsNullOrEmpty(n.reply_message)) {
+                                html += '<div><div class="widper100 c-line mtonerem"><div class=" wb"><div class="g-font widper40">' + n.receive_name + '回复：</div><div class="tright g-font widper60 p14">' + convertDateTimeToString(parseISO8601(n.reply_time)) + '</div></div>';
+                                html += '<div class="c-line">' + n.reply_message + '</div>';
+                            }
+                            html += '</div>';
+                            html += '</div>';
+                            html += '</div>';
+                            html += '</div>';
+                            html += '</div>';
+
+                        }
+
+                        //#region 移到列表上的按钮
+                        html += '<div id="gift_' + n.id + '">';
+                        html += '<div class="tright bottom">';
+
+                        if (n.status == 1 && (n.product_type == 1 || n.product_type == 7 || n.product_type == 8) && searchType == 1) {
+                            if ((n.product_type == 7 || n.product_type == 8) && (n.is_virtual_reception == 0 || n.is_virtual_reception == 2)) {
+                                html += ' <input type="button"  class="btnwhite  tinybtn"   onclick="goRecharge(' + n.id + ')"  value="立即充值" />  ';
+                            }
+                            if (n.is_virtual_reception == 1 || n.is_virtual_reception == 2) {
+                                html += ' <input type="button"  class="btnwhite  tinybtn"  onclick="updataGift(' + n.id + ',4,this,' + n.receive_score + ')"  value="接收积分" />';
+                            }
+                            if (n.product_type == 1 && (n.is_virtual_reception == 0 || n.is_virtual_reception == 2)) {
+                                html += '<input type="button"  class="btnwhite  tinybtn"  onclick="confirmOrder(' + n.id + ',this,' + n.receive_score + ')" value="接收实物" /> ';
+                            }
+                            html += '<input type="button"  class="btngray  tinybtn" onclick="updataGift(' + n.id + ',2,this,' + n.receive_score + ')" value="拒收" />';
+                        }
+                        if (n.status == 1 && (n.product_type != 1 && n.product_type != 7 && n.product_type != 8) && searchType == 1) {
+                            html += '  <input type="button"  class="btnwhite  tinybtn"  onclick="updataGift(' + n.id + ',1,this,' + n.receive_score + ')" value="接收" />   <input type="button"  class="btngray  tinybtn" onclick="updataGift(' + n.id + ',2,' + n.receive_score + ')" value="拒收" />';
+                        }
+                        if (searchType == 2) {
+                            if (!n.send_is_del && n.status != 1) {
+                                html += '<input type="button"  class="btngray  tinybtn"  gift_status=' + n.status + ' searchtype=' + searchType + ' onclick="updataGift(' + n.id + ',7,this,' + n.receive_score + ')"  value="删除" />';
+                            }
+                        }
+                        else {
+                            if (!n.receive_is_del && n.status != 1) {
+                                html += '<input type="button"  class="btngray  tinybtn"  gift_status=' + n.status + ' searchtype=' + searchType + '  onclick="updataGift(' + n.id + ',7,this,' + n.receive_score + ')"  value="删除" />';
+                            }
+                        }
+                        html += '</div>';
+                        html += '</div>';
+                        //#endregion
+                        $("#giftdetail .pab").empty();
+                        $("#giftdetail .pab").append(html);
+
+                        $('img').bind('error', function () {
+                            $(this).attr('src', '../images/default-product.png');
+                            $(this).unbind('error');
+
+                        })
+                    }
+                }
+
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function operateGift(id, operation_type) {
+            var reply = "";
+            pop('正在提交');
+            $.get(domain + 'api/customer/GiftUpdate',
+                {
+                    uid: uid,
+                    id: id,
+                    operation_type: operation_type,
+                    reply: reply,
+                    address_id: ""
+                },
+                function (json) {
+                    clearpop();
+                    if (json.res == 1) {
+                        if (operation_type == 7) {
+                            onClickBack();
+                        }
+                        else {
+                            error('操作成功');
+                            bind(id);
+                        }
+
+                    }
+                    else {
+                        error('操作失败');
+                    }
+                }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                    clearpop();
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                });
+        }
+
+        //#region 移到列表上了
+        function updataGift(id, operation_type, obj, score) {
+            if (operation_type == 4) { //接收积分
+                //choiceboxhastitle("提示", "不接受实物，兑换为" + score + "积分？", "取消", function () { $('.overlay').hide(); }, "确定", operateGift(id, operation_type, obj));
+                dialogbox("不接受实物，兑换为" + score + "积分？", function () { operateGift(id, operation_type) });
+
+            } else if (operation_type == 1) {//接收道具
+                //choiceboxhastitle("提示", "接收，并获得" + score + "积分？", "取消", function () { $('.overlay').hide(); }, "确定", operateGift(id, operation_type, obj));
+                var info = "接收，并获得" + score + "积分？";
+                if (score == 0 || score == "0") {
+                    info = "确认接收？";
+                }
+                dialogbox(info, function () { operateGift(id, operation_type) });
+            } else if (operation_type == 2) {  //拒收
+                //choiceboxhastitle("提示", "残忍拒绝，退给TA？", "取消", function () { $('.overlay').hide(); }, "确定", operateGift(id, operation_type, obj));
+                dialogbox("残忍拒绝，退给TA？", function () { operateGift(id, operation_type) });
+            } else if (operation_type == 7) { //删除
+                //choiceboxhastitle("提示", "删除后您将不能恢复记录？", "取消", function () { $('.overlay').hide(); }, "确定", operateGift(id, operation_type, obj));
+                var gift_status = $(obj).attr('gift_status');
+                var searchtype = $(obj).attr('searchtype');
+                if ((gift_status == 6 || gift_status == 3) && searchtype == 1) {
+                    dialogbox("删除后，该条礼物信息将不再显示于列表中，确定删除？", function () { operateGift(id, operation_type) });
+                }
+                else if (gift_status == 2 && searchtype == 1) {
+                    dialogbox("删除后，该条礼物信息将不再显示于列表中，并且您自己的信息也不会在赠送者的赠送信息中显示，确认删除？", function () { operateGift(id, operation_type) });
+                }
+                else {
+                    dialogbox("删除后，该条礼物信息将不再显示于列表中，确定删除？", function () { operateGift(id, operation_type) });
+                }
+
+
+            } else {
+                operateGift(id, operation_type);
+            }
+        }
+
+        function givePresent(product_id, receive_uids, receive_names) {
+            var paramArray =
+            {
+                title: '填写订单',
+                url: '/mall/givepresent.html?uid=' + uid + "&product_id=" + product_id + '&receive_uids=' + receive_uids + '&receive_names=' + receive_names,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(paramArray);
+        }
+
+        function replyMsg(id) {
+            var paramArray =
+           {
+               title: '回复',
+               url: '/customer/replygift.html?uid=' + uid + "&id=" + id + "&uname=" + uname,
+               urlType: 1,
+               close: false,
+               children: [{
+                   title: '发送',
+                   url: 'replymsg()',
+                   urlType: 2,
+                   childTitle: ''
+               }]
+           };
+            appRedirect(paramArray);
+        }
+
+        function confirmOrder(id) {
+            var paramArray =
+              {
+                  title: '确认订单',
+                  url: '/customer/confirmgift.html?uid=' + uid + "&id=" + id,
+                  urlType: 1,
+                  close: false,
+                  children: []
+              };
+            appRedirect(paramArray);
+        }
+
+        function onClickBack() {
+            var array = {
+                title: '我的礼物',
+                url: 'backRefresh(' + id + ')',
+                urlType: 2,
+                close: true,
+                children: []
+            };
+            appRedirect(array);
+        }
+
+        function goRecharge(id) {
+            var paramArray =
+             {
+                 title: '确认订单',
+                 url: '/customer/charge.html?uid=' + uid + "&id=" + id,
+                 urlType: 1,
+                 close: false,
+                 children: []
+             };
+            appRedirect(paramArray);
+        }
+        //#endregion
+
+    </script>
+</head>
+<body class="pabthreerem">
+    <div id="giftdetail"><div class=" pab"></div><div class="loading">正在加载</div></div>
+</body>
+</html>

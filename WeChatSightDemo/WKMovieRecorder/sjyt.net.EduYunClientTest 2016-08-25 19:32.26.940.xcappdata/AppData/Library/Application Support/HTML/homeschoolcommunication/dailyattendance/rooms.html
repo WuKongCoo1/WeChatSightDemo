@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>宿舍</title>
+    <link href="../../css/commom.css" rel="stylesheet" />
+    <script src="../../js/jquery-1.6.1.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script src="../../js/usercontrolls.js"></script>
+    <script>
+        var school_id = request("school_id");
+
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            var room_list = selectRoom(school_id);
+            if (chk_room_count > 0) {
+
+                if (chk_room_count > 1) { //多个班级才能筛选
+                    if (!strIsNullOrEmpty(school_id)) {
+
+                        $("#room_list").html(room_list);
+                        dormRoomOption();
+                        $(".chk_room").each(function (i) {
+                            if (("," + chk_room_ids + ",").indexOf("," + $(this).val() + ",") >= 0) {
+                                $(this).attr("checked", true)
+                            }
+                        });
+
+                        if (strIsNullOrEmpty(type)) {
+                            $("#sel_room_ok").click(function () {
+                                RoomSel();
+                            });
+                        }
+                    }
+                }
+                else {
+                    $("#room_list").html(room_list);
+                    RoomSel();
+                }
+            } else {
+                error("没有宿舍");
+            }
+        });
+
+        function RoomSel() {
+
+            getRoomSelValue();
+            var array = {
+                title: '筛选',
+                url: 'RoomSel(\'' + chk_room_ids + '\',\'' + chk_room_names + '\')',
+                urlType: 2,
+                close: true,
+                children: []
+            };
+            appRedirect(array);
+        }
+    </script>
+</head>
+<body>
+    <div id="room_list" class="detailblock classbg pab"></div>
+</body>
+</html>

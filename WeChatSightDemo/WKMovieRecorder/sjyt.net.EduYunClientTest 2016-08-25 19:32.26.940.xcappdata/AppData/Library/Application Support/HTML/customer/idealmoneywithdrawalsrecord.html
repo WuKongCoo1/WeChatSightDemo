@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>提现记录</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        var uid = request("uid");
+
+        var index = 1;
+        var size = 10;
+        var count = 0;
+        var firstLoad = true;
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            GetList();
+        });
+
+        $(window).scroll(function () {
+            var scrollTop = $(this).scrollTop();
+            var scrollHeight = $(document).height();
+            var windowHeight = $(this).height();
+            if (scrollTop + windowHeight == scrollHeight) {
+                setTimeout(function () {
+                    GetList();
+                }, 400);
+            }
+        })
+
+        function GetList() {
+            if (firstLoad || (index - 1) * size < count) {
+                $.ajax({
+                    type: "get",
+                    async: true,
+                    url: domain + "api/Customer/IdealMoneyWithdrawalsRecord",
+                    data: {
+                        uid: uid,
+                        index: index,
+                        size: size
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        var listStr = "";
+                        if (data.rows == null || data.rows.length == 0) {
+                            listStr += "<div class='nodata noleave'>哦吼，这里什么都没有~</div>";
+                            $('#list').removeClass('bgblock');
+                        }
+                        for (var i = 0; i < data.rows.length; i++) {
+                            listStr += '<div class="hkbgitem mlper6 wb patb">'
+                            listStr += '<div class="widper70">'
+                            listStr += '<div class="g-line">' + data.rows[i].bank_name + " " + data.rows[i].card_no.substr(-4) + '</div>';
+                            listStr += "<div class='g-font p14'>" +  convertDateTimeToString(parseISO8601(data.rows[i].create_time)) + "</div>";
+                            listStr += "</div>";
+                            listStr += "<div class='widper30 tcenter'>"
+                            listStr += '<div class="mt10">' + data.rows[i].status_name + '</div>';
+                            listStr += '<div class="y-font">' + data.rows[i].expend_ideal_money + '</div>';
+                            listStr += '</div>';
+                            listStr += '</div>'
+                        }
+                        if (!strIsNullOrEmpty(listStr)) {
+                            $("#list").append(listStr);
+                        }
+                        count = data.total;
+                        index++;
+                        firstLoad = false;
+
+                    }
+                });
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="list" class="bgblock mtonerem pabthreerem"></div>
+</body>
+</html>

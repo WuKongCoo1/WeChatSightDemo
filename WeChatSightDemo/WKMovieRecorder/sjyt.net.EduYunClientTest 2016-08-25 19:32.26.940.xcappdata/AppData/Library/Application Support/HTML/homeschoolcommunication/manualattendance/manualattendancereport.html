@@ -1,0 +1,581 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <link href="../../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../../js/jquery-1.6.1.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script src="../../js/usercontrolls.js"></script>
+    <title></title>
+    <script>
+        var uid = request("uid");
+        var class_id = request("class_id");
+        var school_id = request("school_id");
+        var user_type = request("user_type");
+        var date = request("date");
+        var report_id = request("report_id");
+        var search = request("search");    //1：筛选结果回来之后，在应考勤班级、实际考勤班级后面加上“（班级）”
+        var room_id = request("room_id");
+
+        var uid_child_current = null;
+        var att_list;
+        var result_flag;
+        var target;
+        var att_id = request("att_id");;
+        var method_name = request("method_name");
+        if (strIsNullOrEmpty(method_name)) {
+            method_name = "GetManualAttendanceByUid";
+        }
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    if (search == "1") {
+                        var pm = {
+                            title: "手动考勤（筛选）",
+                            children: []
+                        }
+                        resetTitle(pm);
+                    }
+
+                    if (!strIsNullOrEmpty(request("is_add")) && request("is_add") == "1") {
+
+                        bridge.registerHandler("onClickBack", function (data, responseCallback) {
+                            var array = {
+                                title: null,
+                                url: null,
+                                urlType: 0,
+                                close: true,
+                                shutAll: true,
+                                children: []
+                            }
+                            responseCallback(array);
+                        });
+                    }
+                }, false);
+            }
+
+            if (request("has_class") != "1") {
+                $("body").html("<div class='nodata nohomework'>哦豁~ 您还没有班级哦！</div>");
+                return;
+            }
+
+            $("#search").hide();
+            $("#none").hide();
+            if (type) {
+                $("#addAttInfo").hide();
+                $("#myPublish").hide();
+                $("#select").hide();
+            }
+
+            $("#addAttInfo").click(function () {
+                addAttInfo();
+            });
+            $("#myPublish").click(function () {
+                myPublish();
+            });
+            $("#select").click(function () {
+                select();
+            });
+            $("#search").click(function () {
+                var array = {
+                    title: '搜索',
+                    url: '/HomeSchoolCommunication/attendance/studentsearch.html?uid=' + uid + "&user_type=" + user_type + "&school_id=" + school_id + "&class_id=" + class_id + "&att_date=" + date + "&att_type=3",
+                    urlType: 1,
+                    close: false,
+                    children: []
+                };
+                appRedirect(array);
+            });
+
+            if (method_name.toUpperCase() == ("GetManualAttendanceByUid").toUpperCase()) {
+
+                $.ajax({
+                    type: "get",
+                    async: false,
+                    url: domain + "api/HSCForImageURL/GetManualAttendanceByUid",
+
+                    data: {
+                        uid: uid,
+                        class_id: class_id,
+                        school_id: school_id,
+                        user_type: user_type,
+                        uid_child: uid_child_current,
+                        manual_attendance_report_id: report_id
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        LoadData(data);
+                    }
+                });
+            }
+            else if (method_name.toUpperCase() == ("GetManualAttendanceSearch").toUpperCase()) {
+                $.ajax({
+                    type: "get",
+                    async: false,
+                    url: domain + "api/HSCForImageURL/GetManualAttendanceSearch",
+
+                    data: {
+                        uid: uid,
+                        class_id: class_id,
+                        school_id: school_id,
+                        user_type: user_type,
+                        uid_child: uid_child_current,
+                        manual_attendance_id: att_id,
+                        room_id: room_id,
+                        check_attendance_time: date
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        LoadData(data);
+                    }
+                });
+            }
+
+
+            $(".attendance_result").click(function () {
+                var attendance_result = $(this).attr("result");
+                GetAttInfo(attendance_result);
+            });
+
+        });
+
+        function LoadData(data) {
+            if (data.rows.length == 0 || data.rows.Table.length == 0) {
+                $("#all").hide();
+                $("#none").show();
+                return;
+            }
+            target = data.rows.Table[0].target;
+            if (target == "2") {
+                $("[name=objName]").text("班级");
+            }
+            else if (target == "3") {
+                $("[name=objName]").text("宿舍");
+            }
+
+            result_flag = data.result_flag;
+            var att_info = data.rows.Table;   //考勤信息和统计信息
+            if (att_info.length > 0) {
+                att_id = att_info[0].manual_attendance_id;
+                $("#attName").text(att_info[0].manual_attendance_name);
+                $("#attDate").text(att_info[0].create_time);
+                if (result_flag == 1) { //统计
+                    var is_search = "";
+                    if (search == "1") {
+                        is_search = " (筛选)";
+                    }
+                    $(".is_search").html(is_search);
+
+                    $("#Scount").text(att_info[0].should_class_count);
+                    $("#Acount").text(att_info[0].actual_class_count);
+                }
+                else if (result_flag == 2) { //列表
+                    $("#search").show();
+                    $("#person_att_name").text(strIsNullOrEmpty(att_info[0].attendance_name) ? "无" : att_info[0].attendance_name);
+                    if (target == "2") {
+                        $("#att_class_or_room").text(att_info[0].grade_name + (strIsNullOrEmpty(att_info[0].class_name) ? '' : att_info[0].class_name + "班") + att_info[0].class_remark);
+                    }
+                    else if (target == "3") {
+                        $("#att_class_or_room").text(att_info[0].dorm_name + att_info[0].room_name);
+                    }
+                    $("#att_teacher").text(att_info[0].creator_name);
+                    var update_flag = data.update_flag;
+                    if (update_flag == 1) {
+                        $("#update").html("<input type='button' class='achangevalue p14' value='修改' id='update' onclick='GoUpdate(" + att_info[0].id + "," + att_info[0].manual_attendance_id + ",\"" + att_info[0].class_id + "\")' />");
+                    }
+                    else if (update_flag == 2) {
+                        $("#updateSpan").html("<div class='p14 y-font c-line mlper3'>修改考勤结果请联系考勤老师 </div>");
+                    }
+                }
+                $("#stuCount").text(att_info[0].should_count);
+                $("#attendance_result_1").text(att_info[0].absent_count);
+                $("#attendance_result_2").text(att_info[0].leave_count);
+                $("#attendance_result_3").text(att_info[0].late_count);
+                $("#attendance_result_0").text(att_info[0].normal_count);
+            }
+            else {
+                //暂无数据
+            }
+
+            att_list = data.rows.Table1;
+            GetAttInfo(4);
+        }
+
+        function GoUpdate(report_id, att_id, classId) {
+            var array = {
+                title: '修改考勤',
+                url: '/homeschoolcommunication/manualattendance/mastuattendancelogadd.html?close=no&report_id=' + report_id + "&add_type=edit&att_id=" + att_id + "&uid=" + uid + "&class_id=" + class_id + "&sel_class_id=" + classId + "&user_type=" + user_type + "&school_id=" + school_id,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+
+        function GetAttInfo(result) {
+            setClass(result);
+            if (result_flag == 1) { //统计
+                $("#gradeClassList").show();
+                $("#attendance_list").hide();
+                $(".report").show();
+                $(".list").hide();
+
+                if (att_list.length > 0) {
+                    var strList = "";
+                    for (var i = 0; i < att_list.length; i++) {
+                        //判断是否大于0
+                        var count = 0;
+                        if (result == 0) {
+                            count = att_list[i].normal_count;
+                        }
+                        if (result == 1) {
+                            count = att_list[i].late_count;
+                        }
+                        if (result == 3) {
+                            count = att_list[i].leave_count;
+                        }
+                        if (result == 4) {
+                            count = att_list[i].absent_count;
+                        }
+
+                        if (count > 0) {
+
+                            if (target == 2) {//班级
+
+
+                                var s = "";
+                                var className = "";
+                                var grade_id = "";
+
+                                if (att_list[i].displayorder == "c") {
+                                    s = "";
+                                    className = " c_" + att_list[i].grade_id;
+                                } else if (att_list[i].displayorder == "b") {
+                                    className = " grade";
+                                    grade_id = " grade_id=\"" + att_list[i].grade_id + "\" ";
+                                }
+                                var show = "";
+                                var cli = "";
+                                if (att_list[i].attendance_count > 1) {
+                                    show = "<span onclick='showList(" + att_list[i].class_id + ",null,\"" + att_list[i].name + "\")'>查看<span>";
+                                }
+                                else {
+                                    cli = "onclick=\"ShowLogList('b'," + att_list[i].grade_id + "," + att_list[i].class_id + ")\"";
+                                }
+
+                                strList += "<div  class='bb1 bgwhite patb  wb " + className + "' " + grade_id + ">"
+                                strList += "<div class='widper100 indentb g-line wb' " + cli + " ><div class='widper80'>" + s + att_list[i].name + "<span class='y-font mlonerem'>" + count + "</span> </div>" + show;
+                                if (strIsNullOrEmpty(show) && att_list[i].displayorder == "c") {
+                                    strList += "<div class='widper20 tcenter'> <img class='icon mt10' src='../../images/next.png'   ></img></div>";
+                                }
+                                strList += "</div>";
+                                strList += "</div>";
+                            }
+                            else if (target == 3) {//宿舍
+
+                                var s = "";
+                                var className = "";
+                                var dorm_id = "";
+
+                                if (att_list[i].displayorder == "c") {
+                                    s = "&nbsp;&nbsp;&nbsp;&nbsp;";
+                                    className = " d_" + att_list[i].dorm_id;
+                                } else if (att_list[i].displayorder == "b") {
+                                    className = " dorm";
+                                    dorm_id = " dorm_id=\"" + att_list[i].dorm_id + "\" ";
+                                }
+                                var show = "";
+                                var cli = "";
+                                if (att_list[i].attendance_count > 1) {
+                                    show = "<span  class='y-font'onclick='showList(null," + att_list[i].room_id + ",\"" + att_list[i].name + "\")'>查看<span>";
+                                }
+                                else {
+                                    cli = " onclick=\"ShowLogList('s'," + att_list[i].dorm_id + "," + att_list[i].room_id + ")\"";
+                                }
+
+                                strList += "<div  class='bgblock patb mtb5 g-line wb " + className + "' " + dorm_id + ">"
+                                strList += "<div class='widper90 indentb' >" + s + att_list[i].name + "<span class='y-font mlonerem'>" + count + "</span>" + show;
+                                if (strIsNullOrEmpty(show) && att_list[i].displayorder == "c") {
+                                    strList += "<div> <img class='icon ' src='../../images/next.png' " + cli + " ></img></div>";
+                                }
+                                strList += "</div>";
+                                strList += "</div>";
+                            }
+                        }
+                    }
+                    if (strIsNullOrEmpty(strList)) {
+                        $("#gradeClassList").html("<div class='tcenter mtonerem g-font'>暂无数据</div>");
+                    }
+                    else {
+                        $("#gradeClassList").html(strList);
+                    }
+                }
+                else {
+                    $("#gradeClassList").html("<div class='tcenter mtonerem g-font'>暂无数据</div>");
+                }
+
+            }
+            else if (result_flag == 2) { //列表
+                $("#attendance_list").show();
+                $("#gradeClassList").hide();
+                $(".list").show();
+                $(".report").hide();
+
+                if (att_list.length > 0) {
+                    var listStr = "";
+                    for (var i = 0; i < att_list.length; i++) {
+                        if (result == att_list[i].attendance_result) {
+                                listStr += "<div class='bgwhite  wb' onclick='GoStuList(" + att_list[i].uid + ",\"" + att_list[i].name + "\"," + att_list[i].manual_attendance_report_id + ",\"" + att_list[i].class_id + "\"," + att_list[i].id + ")'>";
+                            listStr += "<div class='mlper3'>"
+                            if (strIsNullOrEmpty(att_list[i].img)) {
+                                listStr += "<img  class='headimg' src='../../images/default-avatar.png' onclick='event.stopPropagation();GoStuInfo(" + att_list[i].uid + "," + att_list[i].class_id + ",\"" + att_list[i].name + "\")' />";
+                            }
+                            else {
+                                listStr += "<img  class='headimg' onerror='onerror=null;src=\"../../images/default-avatar.png\"'  src='" + att_list[i].img + "' onclick='event.stopPropagation();GoStuInfo(" + att_list[i].uid + "," + att_list[i].class_id + ",\"" + att_list[i].name + "\")' />";
+                            }
+                            listStr += "</div>"
+                            listStr += "<div class='widper60 mlper3 lh4 mt2'>" + att_list[i].name + "</div>";
+                            listStr += "<div class='widper10 tright y-font p14 lh4 mt2'>" + GetResName(att_list[i].attendance_result) + "</div>";
+                            listStr += "</div>";
+                        }
+                    }
+                    if (strIsNullOrEmpty(listStr)) {
+                        $("#attendance_list").html("<div class='tcenter mtonerem g-font'>暂无数据</div>");
+                    }
+                    else {
+                        $("#attendance_list").html(listStr);
+                    }
+                }
+                else {
+                    $("#attendance_list").html("<div class='tcenter mtonerem g-font'>暂无数据</div>");
+                }
+            }
+        }
+
+        function showList(classId, roomId, className) {
+
+            var array = {
+                title: className,
+                url: '/homeschoolcommunication/manualattendance/attlist.html?uid=' + uid + '&att_id=' + att_id + '&class_id=' + classId + '&room_id=' + roomId + '&date=' + date + '&is_published=2' + "&user_type=" + user_type + "&school_id=" + school_id,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+
+        function ShowLogList(type_name, parent, child) {
+            method_name = "GetManualAttendanceSearch";
+            var rId = "";
+            var cId = "";
+            if (type_name == "b") {
+                cId = child;
+            } else if (type_name == "s") {
+                rId = child;
+            }
+            var array = {
+                title: '考勤统计',
+                url: '/homeschoolcommunication/manualattendance/manualattendancereport.html?uid=' + uid + '&att_id=' + att_id + '&class_id=' + cId + '&room_id=' + rId + '&date=' + date + '&user_type=' + user_type + "&school_id=" + school_id + "&method_name=GetManualAttendanceSearch&has_class=" + request("has_class"),
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+
+        function GoStuList(stu_uid, stu_name, report_id, c_id, att_id) {
+            var array = {
+                title: stu_name,
+                url: '/homeschoolcommunication/manualattendance/studentloglist.html?uid=' + uid + '&date=' + date + "&school_id=" + school_id + "&user_type=" + user_type + "&uid_child=" + stu_uid + "&class_id=" + c_id + "&childName=" + stu_name + "&report_id=" + report_id + "&att_id=" + att_id,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+
+        function addAttInfo() {
+            var array = {
+                title: '考勤类型',
+                url: '/homeschoolcommunication/manualattendance/maselect.html?uid=' + uid + '&class_id=' + class_id + "&user_type=" + user_type + "&school_id=" + school_id,
+                urlType: 1,
+                close: false,
+                isShut: true,
+                children: [
+                            {
+                                title: '帮助',
+                                url: 'Help()',
+                                urlType: 2,
+                                childTitle: ''
+                            }]
+            };
+            appRedirect(array);
+        }
+        function myPublish() {
+
+            var array = {
+                title: '我发布的',
+                url: '/homeschoolcommunication/manualattendance/attlist.html?uid=' + uid + '&class_id=' + class_id + '&is_published=1' + "&user_type=" + user_type + "&school_id=" + school_id,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+        function select() {
+            var array = {
+                title: '筛选结果',
+                url: '/homeschoolcommunication/manualattendance/select.html?uid=' + uid + '&date=' + date + "&school_id=" + school_id + "&user_type=" + user_type + "&class_id=" + class_id,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+
+        function searchAttendance() {
+        }
+        function GetResName(id) {
+            switch (id) {
+                case 0: return "正常";
+                case 1: return "迟到";
+                case 2: return "早退";
+                case 3: return "请假";
+                case 4: return "缺勤";
+                case "0": return "正常";
+                case "1": return "迟到";
+                case "2": return "早退";
+                case "3": return "请假";
+                case "4": return "缺勤";
+                default: return "";
+            }
+        }
+        function setClass(status1) {
+            if (status1 == "0") {
+                $('.widper25').removeClass('y-font');
+                $(".zero").addClass('y-font');
+            } else if (status1 == "1") {
+                $('.widper25').removeClass('y-font');
+                $(".one").addClass('y-font');
+            } else if (status1 == "2") {
+                $('.widper25').removeClass('y-font');
+                $(".two").addClass('y-font');
+            } else if (status1 == "3") {
+                $('.widper25').removeClass('y-font');
+                $(".three").addClass('y-font');
+            } else if (status1 == "4") {
+                $('.widper25').removeClass('y-font');
+                $(".four").addClass('y-font');
+            }
+        }
+
+        function GoStuInfo(stu_uid, stu_class_id, stu_name) {
+            if (type == "0") {
+                // surfaceView.goStudentDetail(stu_class_id.toString(), stu_uid.toString(), stu_name);
+                bridge.callHandler('goStudentDetail', {
+                    uid: stu_uid,
+                    class_id: stu_class_id,
+                    student_name: stu_name
+                });
+            }
+            else if (type == "1") {
+                bridge.send({
+                    goStudentDetail: {
+                        uid: stu_uid,
+                        class_id: stu_class_id,
+                        student_name: stu_name
+                    }
+                });
+            }
+        }
+
+        function onClickBack() {
+            var array = {
+                title: null,
+                url: null,
+                urlType: 0,
+                close: true,
+                shutAll: true,
+                children: []
+            }
+            appRedirect(array);
+        }
+    </script>
+</head>
+<body style="min-height:24rem;">
+    <input type="button" value="新建考勤" id="addAttInfo" />
+    <input type="button" value="我发布的" id="myPublish" />
+    <input type="button" value="筛选结果" id="select" />
+    <div id="all">
+        <div id="search" class="searchdiv wb">
+            <div class="widper80">
+                <input class="bgiconitem last indentb" placeholder="输入学生姓名查找" />
+            </div>
+            <div class="widper20 tright">
+                <input class="searbtn" type="button" />
+            </div>
+        </div>
+        <div id="LastAttInfo" class="bgwhite  pab bb1 relative mt10 p15 detailblock">
+            <div class="g-line wb  bgatten p18 pab">
+                <div class="mlper3">
+                    <img class="icon" src="../../images/timeicon.png" />
+                </div>
+                <div id="attName" class="g-line  widper60  mlper6 mt10"></div>
+                <div id="update" class="mlper6"></div>
+            </div>
+            <div class="list  g-font c-line mlper3 mt10 ">
+                考勤名称：<span id="person_att_name"></span>
+            </div>
+            <div class=" g-font c-line mlper3  mt2">最近提交时间：<span id="attDate"></span></div>
+            <div class="report  g-font c-line mlper3">
+                应考勤<span name="objName"></span>：
+                <span id="Scount"></span>个<span name="objName"></span><span class="is_search"></span>
+            </div>
+            <div class="report  g-font c-line mlper3">
+                实际考勤<span name="objName"></span>：
+                <span id="Acount"></span>个<span name="objName"></span><span class="is_search"></span>
+            </div>
+
+            <div class="list  g-font c-line mlper3">
+                考勤<span name="objName"></span>：<span id="att_class_or_room"></span>
+            </div>
+            <div class="list  g-font c-line mlper3">
+                考勤老师：<span id="att_teacher"></span>
+            </div>
+            <div class=" g-font c-line mlper3">应考勤人数：<span id="stuCount"></span>人</div>
+        
+            <div id="updateSpan"></div>
+        </div>
+        <div class="bgwhite detailblock pabonerem">
+            <div id="attendance_report" class=" wb mt10 ">
+                <div class="widper25  tcenter  patb  four y-font">
+                    <div class="attendance_result bb3yellow   tcenter  patb" result="4">缺勤</div>
+                    <div id="attendance_result_1" class="mt10">0</div>
+                </div>
+                <div class="widper25 tcenter patb three">
+                    <div class="attendance_result bb3yellow  tcenter  patb" result="3">请假</div>
+                    <div id="attendance_result_2" class="mt10">0</div>
+                </div>
+                <div class="widper25  tcenter patb one">
+                    <div class="attendance_result  bb3yellow tcenter  patb" result="1">迟到</div>
+                    <div id="attendance_result_3" class="mt10">0</div>
+                </div>
+                <div class="widper25  tcenter patb zero">
+                    <div class="attendance_result  bb3yellow tcenter  patb" result="0">正常</div>
+                    <div id="attendance_result_0" class="mt10">0</div>
+                </div>
+            </div>
+            <div id="gradeClassList"></div>
+            <div id="attendance_list">
+
+            </div>
+        </div>
+        </div>
+    <div id="none" class='nodata noleave'>暂无数据</div>
+</body>
+</html>

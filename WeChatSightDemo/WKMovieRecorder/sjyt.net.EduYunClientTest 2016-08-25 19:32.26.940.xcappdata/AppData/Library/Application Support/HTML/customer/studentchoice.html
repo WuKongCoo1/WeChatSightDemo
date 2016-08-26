@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>选择服务对象</title>
+    <link href="../css/commom.css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        var uid = request('uid');
+        var classid = request('classid');
+        var uidchilds = request('uidchilds');
+        var uidChildArray = strIsNullOrEmpty(uidchilds) ? [] : uidchilds.split(',');
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            $.ajax({
+                type: 'get',
+                url: domain + 'api/customer/GetGenearchList',
+                async: false,
+                data: {
+                    uid: uid,
+                    classid: classid
+                },
+                dataType: 'json',
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (json) {
+                    var html = '';
+                    $.each(json.rows, function (i, n) {
+
+                        html += '<li class="wb bb1">';
+                        html += '<div class="widper10">';
+                        html += '<label class="mlper6 label relative checkbox-item" onclick="ischeck(this, true)">';
+                        html += '<input type="checkbox" class="ckbox chk_group ckboxout" id="chk_uid_' + n.uid_child + '" value="' + n.uid_child + '" ' + ($.inArray(n.uid_child.toString(), uidChildArray) != -1 ? 'checked="checked"' : '') + '/>';
+                        html += '</label>';
+                        html += '</div>';
+                        html += '<div class="widper20 tcenter">';
+                        html += '<div>';
+                        html += '<img class="headimg" src="../../images/default-avatar.png">';
+                        html += '</div>';
+                        html += '</div>';
+                        html += '<div class="bgimgitem widper60 tleft palr last ">';
+                        html += '<div class="imgoneline indentb" id="chk_name_' + n.uid_child + '">' + n.real_name_child + '</div>';
+                        html += '</div>';
+                        html += '</li>';
+                    });
+                    $('#div_chk_user ul').html(html);
+                }
+            });
+        });
+
+
+
+        function checkUser() {
+            var checkedUser = [];
+            $('#div_chk_user ul :checkbox:checked').each(function (i, n) {
+                checkedUser.push({ uid: $(n).val(), realName: $('#chk_name_' + $(n).val()).text() });
+            });
+            if (checkedUser.length == 0) {
+                error('请至少选择一个服务对象');
+                return;
+            }
+
+            if (!strIsNullOrEmpty(type) && (type == "0" || type == "1")) {
+                var array = {
+                    title: '购买包月服务',
+                    url: 'setChildren(\'' + JSON.stringify(checkedUser) + '\')',
+                    urlType: 2,
+                    close: true,
+                    children: []
+                };
+                appRedirect(array);
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="div_chk_user">
+        <ul class="bgwhite"></ul>
+        <div class="tcenter mt26">
+            <button type="button" class="btn btnbig btnwhite" onclick="checkUser();">确定</button>
+        </div>
+    </div>
+</body>
+</html>

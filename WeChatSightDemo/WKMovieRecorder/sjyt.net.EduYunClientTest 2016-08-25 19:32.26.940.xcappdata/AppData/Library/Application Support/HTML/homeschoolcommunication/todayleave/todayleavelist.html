@@ -1,0 +1,419 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>请假条</title>
+    <link href="../../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../../js/jquery-1.10.2.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script src="../../js/touchevent.js"></script>
+    <script>
+        var user_type = request("user_type");
+        var uid = request("uid");
+        var school_id = request("school_id");
+        var class_id = request("class_id");
+
+        if (strIsNullOrEmpty(school_id)) {
+            school_id = "0";
+        }
+
+        var index_use = 1;
+        var size_use = 10;
+        var count_use = 0;
+        var firstLoad_use = true;
+
+        var index_recharge = 1;
+        var size_recharge = 10;
+        var count_recharge = 0;
+        var firstLoad_recharge = true;
+
+        var index_genearch = 1;
+        var size_genearch = 10;
+        var count_genearch = 0;
+        var firstLoad_genearch = true;
+
+        var show_type = 0;
+        $(function () {
+            var hei_ = $(window).height();
+            $('body').css('minHeight', hei_);
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            if (request("has_class") != "1") {
+                $("body").html("<div class='nodata nohomework'>您还没有班级哦！</div>");
+                return;
+            }
+
+            if (type == "0" || type == "1") {
+                $("#add").hide();
+            }
+            if (user_type == "0") {
+                $("#genearchs").hide();
+                $("#rechargeRecord").hide();
+                //未审核列表
+                GetUseRecord();
+
+                //已审核列表
+                GetRechargeRecord();
+
+            }
+            else {
+                $("#teachers").hide();
+                GetListGenearch();
+            }
+
+            $("#sp_useRecord").click(function () {
+                show_type = 0;
+                $("#rechargeRecord").hide();
+                $("#useRecord").show();
+                $(this).addClass('selected');
+                $("#sp_rechargeRecord").removeClass("selected");
+                $("#sp_rechargeRecord").addClass("unselect");
+            });
+            $("#sp_rechargeRecord").click(function () {
+                show_type = 1;
+                $(this).addClass('selected');
+                $("#sp_useRecord").removeClass("selected");
+                $("#sp_rechargeRecord").addClass("unselect");
+                $("#useRecord").hide();
+                $("#rechargeRecord").show();
+            });
+
+        });
+
+
+        $(window).scroll(function () {
+            var scrollTop = $(this).scrollTop();
+            var scrollHeight = $(document).height();
+            var windowHeight = $(this).height();
+            if (scrollTop + windowHeight == scrollHeight) {
+                setTimeout(function () {
+                    if (user_type == "1") {
+                        GetListGenearch();
+                    }
+                    else {
+                        if (show_type == 0) {
+                            GetUseRecord();
+                        }
+                        else {
+                            GetRechargeRecord();
+                        }
+                    }
+                }, 400);
+            }
+        })
+
+        function GetUseRecord() {
+            if (firstLoad_use || (index_use - 1) * size_use < count_use) {
+                $.ajax({
+                    type: "get",
+                    async: true,
+                    url: domain + "api/HSCForImageURL/GetTodayLeaveList",
+                    data: {
+                        is_audited: false,
+                        uid: uid,
+                        user_type: user_type,
+                        school_id: school_id,
+                        class_id: class_id,
+                        index: index_use,
+                        size: size_use
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        var listStr = "";
+                        listStr += "<div  class='mtonerem  bgwhite'>";
+                        for (var i = 0; i < data.rows.length; i++) {
+                            listStr += "<div class='mlper3 wb relative bb1' id='" + data.rows[i].id + "'>";
+                            if (data.rows[i].status == 0 && (uid == data.rows[i].create_uid || user_type == "0")) {
+                                if (type == "0") {
+                                    listStr += "<div class='andelete wb hide'><div class='patblr' onclick=\"event.stopPropagation();Del(" + data.rows[i].id + ",'get')\">删除</div><div class='ancancel patblr' onclick='cancel(this)'>取消 </div></div>";
+                                }
+                                listStr += "<div class='nitem  pat widper100 wb bgwhite relative'>";
+                            } else {
+                                listStr += "<div class='widper100 pat wb bgwhite relative'>";
+                            }
+                            listStr += "<div class='widper20 tcenter mt2'>"
+                            if (strIsNullOrEmpty(data.rows[i].student_img)) {
+                                listStr += "<img class='headimg' src='../../images/default-avatar.png' />";
+                            }
+                            else {
+                                listStr += "<img class='headimg' onerror='onerror=null;src=\"../../images/default-avatar.png\"' src='" + data.rows[i].student_img + "' />";
+                            }
+                            listStr += "</div>"
+                            //  if (data.rows.length - 1 == i) {
+                            //  listStr += "<div class='bgimgitem widper80 tleft  last bgwhite '>";
+                            //  } else {
+                            listStr += "<div class=' widper80 tleft  bgwhite   '>";
+                            // }
+
+                            listStr += "<div onclick=\"GoDetail(" + data.rows[i].id + ")\">";
+                            listStr += "<div class='g-line indentb mt3'>" + data.rows[i].student_name + "</div>";
+                            listStr += "<div class='indentb g-font mt-2'>" + convertDateTimeToString(parseISO8601(data.rows[i].leave_date)) + "</div>";
+                            listStr += "</div>"
+                            listStr += "</div>";
+                            listStr += "</div>";
+
+                            if (data.rows[i].status == 0 && (uid == data.rows[i].create_uid || user_type == "0")) {
+                                listStr += "<div class='cli' >"
+                                listStr += "<a  class= 'delete' href=\"javascript:void(0);\" onclick=\"event.stopPropagation();Del(" + data.rows[i].id + ",'get')\">删除</a>";
+                                listStr += "</div>";
+                            }
+                            listStr += "</div>";
+
+                        }
+                        listStr += "</div>";
+                        if (data.rows.length == 0 && index_use == 1) {
+                            $("#useRecord").html("<div class='nodata noleave'>还没有待审核假条</div>");
+                        }
+                        else {
+                            $("#useRecord").append(listStr);
+                        }
+                        $(".loading").remove();
+
+                        count_use = data.total;
+                        index_use++;
+                        firstLoad_use = false;
+                        touchev()
+                    }
+                });
+            }
+        }
+
+        function GetRechargeRecord() {
+            if (firstLoad_recharge || (index_recharge - 1) * size_recharge < count_recharge) {
+                $.ajax({
+                    type: "get",
+                    async: true,
+                    url: domain + "api/HSCForImageURL/GetTodayLeaveList",
+                    data: {
+                        is_audited: true,
+                        uid: uid,
+                        user_type: user_type,
+                        school_id: school_id,
+                        class_id: class_id,
+                        index: index_recharge,
+                        size: size_recharge
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                    }, success: function (data) {
+                        var listStr = "";
+                        listStr += "<div class='bgwhite mtonerem'>";
+                        for (var i = 0; i < data.rows.length; i++) {
+                            listStr += "<div class='mlper3 pat wb bb1'><div class='widper20 tcenter '>";
+                            if (strIsNullOrEmpty(data.rows[i].student_img)) {
+                                listStr += "<img class='headimg' src='../../images/default-avatar.png' />";
+                            }
+                            else {
+                                listStr += "<img class='headimg' onerror='onerror=null;src=\"../../images/default-avatar.png\"' src='" + data.rows[i].student_img + "' />";
+                            }
+                            listStr += "</div>";
+                            //  if (i == data.rows.length - 1) {
+                            //  listStr += "<div class='bgimgitem bgwhite widper80 tleft   last'>";
+                            // }
+                            // else {
+                            listStr += "<div class=' bgwhite widper80 tleft  '>";
+
+                            // }
+
+
+                            listStr += "<div onclick=\"GoDetail(" + data.rows[i].id + ")\">";
+                            listStr += "<div class='g-line indentb '>" + data.rows[i].student_name + "</div>";
+                            listStr += "<div class='indentb g-font'>" + convertDateTimeToString(parseISO8601(data.rows[i].leave_date)) + "</div>";
+                            listStr += "</div>";
+                            listStr += "</div>";
+                            listStr += "</div>";
+
+                        }
+                        listStr += "</div>";
+                        if (data.rows.length == 0 && index_recharge == 1) {
+                            $("#rechargeRecord").html("<div class='nodata noleave'>您还没有已审核的假条~</div>");
+                        }
+                        else {
+                            $("#rechargeRecord").append(listStr);
+                        }
+                        $(".loading").remove();
+
+                        count_recharge = data.total;
+                        index_recharge++;
+                        firstLoad_recharge = false;
+                        touchev()
+                    }
+                });
+            }
+
+        }
+
+        function GetListGenearch() {
+            if (firstLoad_genearch || (index_genearch - 1) * size_genearch < count_genearch) {
+                $.ajax({
+                    type: "get",
+                    async: true,
+                    url: domain + "api/HSCForImageURL/GetTodayLeaveList",
+                    data: {
+                        is_audited: null,
+                        uid: uid,
+                        user_type: user_type,
+                        school_id: school_id,
+                        class_id: class_id,
+                        index: index_genearch,
+                        size: size_genearch
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        var listStr = "";
+                        listStr += "<div  >";
+                        for (var i = 0; i < data.rows.length; i++) {
+                            listStr += "<div class='wb relative bgwhite' id='" + data.rows[i].id + "'>";
+                            if (data.rows[i].status == 0) {
+                                if (type == "0") {
+                                    listStr += "<div class='andelete wb hide'><div class='patblr' onclick=\"event.stopPropagation();Del(" + data.rows[i].id + ",'get')\">删除</div><div class='ancancel patblr' onclick='cancel(this)'>取消 </div></div>";
+                                }
+                                listStr += "<div class='nitem patb widper100 wb  relative bgwhite'>"
+                            } else {
+                                listStr += "<div class=' widper100 patb wb  relative bgwhite'>"
+                            }
+                            listStr += "<div class='widper20 tcenter mt2'>";
+                            if (strIsNullOrEmpty(data.rows[i].student_img)) {
+                                listStr += "<img class='headimg' src='../../images/default-avatar.png' />";
+                            }
+                            else {
+                                listStr += "<img class='headimg' onerror='onerror=null;src=\"../../images/default-avatar.png\"' src='" + data.rows[i].student_img + "' />";
+                            }
+                            listStr += "</div>";
+                            if (i == data.rows.length - 1) {
+                                listStr += "<div class='hkitem widper80 tleft bb1 bgwhite last pab'>";
+                            }
+                            else {
+                                listStr += "<div class='hkitem widper80 tleft bb1  bgwhite '>";
+
+                            }
+                            listStr += "<div onclick=\"GoDetail(" + data.rows[i].id + ")\">";
+                            listStr += "<div class='wb'>";
+                            listStr += "<div class='c-line indentb widper70 mt3'>" + data.rows[i].student_name + "</div>";
+                            //listStr += "<div class='c-line'>" + data.rows[i].start_time + "至<br/>" + data.rows[i].end_time +"</div>";
+                            listStr += "<div class='widper30 tcenter mt3'>"
+                            if (data.rows[i].status_name == "已同意") {
+                                listStr += "<span class='g-font'>" + data.rows[i].status_name + "</span>";
+                            } else {
+                                listStr += "<span class='y-font'>" + data.rows[i].status_name + "</span>";
+                            }
+                            listStr += "</div>";
+                            listStr += "</div>";
+                            listStr += "<div class='indentb nowrap p15 g-font'>" + data.rows[i].remark + "</div>";
+                            listStr += "<div class='indentb g-font c-line'>" + convertDateTimeToString(parseISO8601(data.rows[i].leave_date)) + "</div>";
+                            listStr += "</div>";
+                            listStr += "</div>";
+                            //listStr += data.rows[i].status_name;
+                            listStr += "</div>";
+                            if (data.rows[i].status == 0) {
+                                listStr += '<div class="cli">';
+                                listStr += "<a  class='delete' href=\"javascript:void(0);\" onclick=\"event.stopPropagation();Del(" + data.rows[i].id + ",'get')\">删除</a>";
+                                listStr += '</div>';
+                            }
+                            listStr += "</div>";
+                        }
+
+                        listStr += "</div>";
+                        if (data.rows.length == 0) {
+                            $("#genearchs").html("<div class='nodata noleave '>还没有请假条</div>");
+                        }
+                        else {
+                            $("#genearchs").append(listStr);
+                        }
+                        $(".loading").remove();
+
+                        count_genearch = data.total;
+                        index_genearch++;
+                        firstLoad_genearch = false;
+                        touchev();
+                    }
+                });
+            }
+
+        }
+
+
+        function GoDetail(id) {
+            var array = {
+                title: '请假条',
+                url: '/HomeSchoolCommunication/todayLeave/todayLeaveDetail.html?id=' + id + "&user_type=" + user_type + "&uid=" + uid + "&school_id=" + school_id + "&class_id=" + class_id,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+
+        }
+
+        function GoAdd() {
+            var array = {
+                title: '添加请假条',
+                url: '/HomeSchoolCommunication/todayLeave/todayLeaveAdd.html?uid=' + uid + "&user_type=" + user_type + "&class_id=" + class_id + "&school_id=" + school_id,
+                urlType: 1,
+                close: false,
+                children: [
+                        {
+                            title: '发布',
+                            url: 'Add()',
+                            urlType: 2,
+                            childTitle: ''
+                        }]
+            };
+            appRedirect(array);
+        }
+
+        function Del(id) {
+            choicetwo("确认删除？", "取消", function () { clear = false; touchev() }, "确定", function () {
+                pop('正在删除');
+                $.ajax({
+                    type: "get",
+                    async: false,
+                    url: domain + "api/HomeSchoolCommunication/TodayLeaveDelete",
+                    data: {
+                        id: id
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        clearpop();
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        clearpop();
+                        if (data.res > 0) {
+                            error("删除成功！");
+                            $("#" + id).remove();
+                        }
+                        else {
+                            error("删除失败！");
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+</head>
+<body>
+    <input type="button" id="add" value="添加假条" onclick="GoAdd()" />
+    <div id="teachers" class="tab wb widper60 mbonerem">
+        <div class="widper50 selected pointer tcenter left y-font" id="sp_useRecord">
+            待审核假条
+        </div>
+        <div class="widper50 unselect pointer tcenter right y-font" id="sp_rechargeRecord">已审核假条</div>
+    </div>
+    <div id="useRecord" class="mtonerem ">
+        <div class="loading">加载中...</div>
+    </div>
+    <div id="rechargeRecord">
+        <div class="loading">加载中...</div>
+    </div>
+    <div id="genearchs">
+        <div class="loading">加载中...</div>
+    </div>
+</body>
+</html>

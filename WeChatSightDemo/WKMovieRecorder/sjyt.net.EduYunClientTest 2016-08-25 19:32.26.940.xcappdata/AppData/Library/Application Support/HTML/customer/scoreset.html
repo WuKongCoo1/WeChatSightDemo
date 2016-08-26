@@ -1,0 +1,330 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>积分设置</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script type="text/javascript">
+        var is_click_show = 0;
+        var uid = request('uid');
+        var hasPwd = "false";
+        var scontrol;
+        $(document).ready(function () {
+            var hei_ = $(document).height();
+            $('.overlay').css('height', hei_);
+            var pwd_switch = $("#pwdswitch").attr("isopen");
+            $.get(domain + 'api/customer/CheckHasPwdSwitch', {
+                uid: uid
+            }, function (json) {
+                hasPwd = json.hasPwd;
+                if (json.flag == "true") {
+                    $("#pwdswitch").attr("isopen", 1);
+                    $("#s-control").addClass("score-o");
+                    $("#s-control").removeClass("score-c");
+                    $(".setpaddword").hide();
+                    $(".changepwd").show();
+
+                }
+                else {
+                    $("#pwdswitch").attr("isopen", 0);
+                    $("#s-control").addClass("score-c");
+                    $("#s-control").removeClass("score-o");
+                    $(".changepwd").hide();
+                    $(".setpaddword").hide();
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+
+            scontrol = document.getElementById('s-control');
+            
+            var startX, endX;
+            function touchStart() {
+                var touch = event.touches[0];
+                startX = touch.pageX;
+               
+            }
+            function touchMove() {
+                var touch = event.touches[0];
+                endX = touch.pageX;
+            }
+            function touchEnd() {
+                if (endX - startX < 0) {
+                    var pwd_switch = $("#pwdswitch").attr("isopen");
+                    is_click_show = 0;
+                    var val = false;
+                    if (pwd_switch == 1) {
+                        if (hasPwd == "true") {
+                            $(".closepwd").parent().fadeIn(100);
+                            $(".closepwd").fadeIn(100);//这里应该弹出验证密码的框框
+                        }
+                        else {
+                            val = true;
+                        }
+                    }
+                }else if(endX > startX){
+                    $(".closepwd").parent().fadeOut();
+                    if (hasPwd == "false") {
+                        is_click_show = 1;
+                        $(".setpaddword").fadeIn(200);  //这里应该弹出设置密码的框框
+                        $(".changepwd").fadeOut(200);
+                    }
+                    else {
+                        $(".setpaddword").fadeIn(200);
+                        $(".changepwd").fadeOut(200);
+                        val = true;
+                    }
+                }
+                    if (val) {  //密码验证通过或者密码设置成功
+                        UpdateStatus(uid, pwd_switch);
+                    }
+
+                }
+            scontrol.addEventListener("touchstart", touchStart, false);
+            scontrol.addEventListener("touchmove", touchMove, false);
+            scontrol.addEventListener("touchend", touchEnd, false);
+
+        });
+
+
+        function UpdateStatus(uid, pwd_switch) {
+            closekeyboard();
+            pwd_switch = pwd_switch == 1 ? 0 : 1;
+            $.get(domain + 'api/customer/UpdatePwdSwitch', {
+                uid: uid,
+                pwd_switch: pwd_switch
+            }, function (json) {
+                if (json.flag == "true") {
+                    hasPwd = "true";
+                    if (pwd_switch == 1) {
+                        $("#pwdswitch").attr("isopen", 1);
+                        $(scontrol).addClass(' score-o');
+                        $(scontrol).removeClass(' score-c');
+                        $(".setpaddword").hide();
+                        $(".changepwd").show();
+                    } else {
+                        $("#pwdswitch").attr("isopen", 0);
+                        $(scontrol).addClass('score-c');
+                        $(scontrol).removeClass(' score-o');
+                        $(".setpaddword").hide();
+                        $(".changepwd").hide();
+                    }
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function CheckPwd() {
+            $.get(domain + 'api/mall/CheckPwd', {
+                uid: uid,
+                pwd: $("#txtoldpwd").attr("oldvalue")
+            }, function (json) {
+                if (json.operationStatus == 1) {
+                    $(".changepwd").hide();
+                    $(".setpaddword").hide();
+                    $(".closepwd").hide();
+                    $(".closepwd").parent().hide();
+                    var pwd_switch = $("#pwdswitch").attr("isopen");
+                    UpdateStatus(uid, pwd_switch);
+                    $("#divoldpwd").html("");
+                    $("#txtoldpwd").attr("oldvalue", "");
+                }
+                else {
+                    error("密码输入错误！");
+                    $("#divoldpwd").html("");
+                    $("#txtoldpwd").attr("oldvalue", "");
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function SetPwd() {
+            var pwd_one = $("#inpwdtxt").attr("oldvalue");
+            var pwd_two = $("#comfirmpwdtxt").attr("oldvalue");
+            if (pwd_one.length != 6) {
+                error("密码请输入6位数字！");
+                return;
+            }
+            if (pwd_one != pwd_two) {
+                error("两次密码输入不一致！");
+                return;
+            }
+            $.get(domain + 'api/customer/SetUserPwd', {
+                uid: uid,
+                pwd: pwd_one
+            }, function (json) {
+                if (json.flag == "true") {
+                    var pwd_switch = $("#pwdswitch").attr("isopen");
+                    UpdateStatus(uid, pwd_switch);
+                    $("#inpwd").html("");
+                    $("#inpwdtxt").attr("oldvalue", "");
+                    $("#comfirmpwd").html("");
+                    $("#comfirmpwdtxt").attr("oldvalue", "");
+                }
+                else {
+                    error("设置失败！");
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+
+        }
+        function UpdatePwd() {
+            var callbackurl = "/customer/scoreset.html" + window.location.search;
+            var array = {
+                title: '修改密码',
+                url: '/customer/updatePwd.html?uid=' + uid + '&position=scoreset&callbackurl=' + encodeURIComponent(callbackurl),
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+        function ForgetPwd() {
+            var array = {
+                title: '忘记密码',
+                url: '/customer/forgetscorepwd.html?uid=' + uid,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+        $(function () {
+            if (type == "1" || type == "0") {
+                $("#back").hide();
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    bridge.registerHandler("onClickBack", function (data, responseCallback) {
+
+                        if (is_click_show == 1) {
+                            closekeyboard();
+                            is_click_show = 0;
+                            $(".setpaddword").hide();
+                        }
+                        else {
+                            var array = {
+                                title: null,
+                                url: null,
+                                urlType: 0,
+                                close: true,
+                                children: []
+                            }
+                            responseCallback(array);
+                        }
+                    });
+                }, false);
+            }
+            var hei_ = $(document).height();
+            $('.closepwd').css('top', (hei_ - 258 -150)/2);
+            $('.overlay').css('height', hei_);
+            $('.selectbank').css('height', hei_);
+            $('.bankclose').click(function () {
+                $('.closepwd').parent().hide();
+                closekeyboard();
+            })
+        })
+
+        function onClickBack() {
+            if (is_click_show == 1) {
+                closekeyboard();
+                is_click_show = 0;
+                $(".setpaddword").hide();
+            }
+            else {
+                var array = {
+                    title: null,
+                    url: null,
+                    urlType: 0,
+                    close: true,
+                    children: []
+                }
+                appRedirect(array);
+            }
+        }
+    </script>
+    <style>
+        .closepwd {
+            width: 92%;
+            background-color: #fafafa;
+            position:fixed;
+            /*top:calc((100% - 258px - 150px)/2);*/
+            /*top: -moz-calc((100% - 258px - 150px)/2);*/
+            /*top: -webkit-calc((100% - 258px - 150px)/2);*/
+            left:4%;
+            z-index:200;
+            height:150px;
+        }
+    </style>
+</head>
+<body>
+    <div class="bgwhite  mtonerem no-effect">
+        <div id="pwdswitch" isopen="0" class="wb relative">
+            <div class="mlper3"><img src="../images/confirmcode.png" class="icon mtonerem"></div>
+            <div class="widper55 mlper3 inputitem patb ">
+                开启积分支付密码
+            </div>
+            <div class="mlp6 control-absolute">
+                <div id="s-control" class="score-c mlper10">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="setpaddword hide selectbank">
+        <input type="button" value=" 返 回 " onclick="onClickBack()" id="back" />
+        <div class="bgwhite widper100 wb patb bb1 bt1" onclick="loadkyboard('inpwd', 'inpwdtxt', 'sinpwd' ,'true');">
+            <div class="mlper3"><img src="../images/confirmcode.png" class="icon mt10"></div>
+            <div id="inpwd" class=" inputitem mlper3 g-font no-effect relative" dataname="输入密码">
+                <span id="sinpwd">输入密码</span>
+            </div>
+            <input type="text" class="hide" id="inpwdtxt" maxlength="6" oldvalue="" />
+        </div>
+        <div class="bgwhite widper100 wb patb bb1 " onclick="loadkyboard('comfirmpwd', 'comfirmpwdtxt', 'scomfirmpwd','true');">
+            <div class="mlper3"><img src="../images/confirmcode.png" class="icon mt10"></div>
+            <div id="comfirmpwd" class=" inputitem mlper3 g-font no-effect relative" dataname="确认密码">
+                <span id="scomfirmpwd">确认密码</span>
+
+            </div>
+            <input type="text" class="hide" maxlength="6" oldvalue="" id="comfirmpwdtxt" />
+        </div>
+        <div class="patb tcenter mt26">
+             <input type="button" class="btnwhite btnbig btn" value=" 确 定 " onclick="SetPwd()" />
+        </div>
+    </div>
+    <div class="changepwd hide">
+        <div class="bgwhite widper100 wb patb bb1 bt1 relative" onclick="ForgetPwd()">
+            <div class="mlper3"><img src="../images/confirmcode.png" class="icon mt10"></div>
+            <div class="widper70 inputitem mlper3"> 忘记密码</div>
+            <div class="tcenter icon-absolute">
+                <img class="icon" src="../images/next.png" />
+            </div>
+        </div>
+        <div class="bgwhite widper100 wb patb bb1 relative" onclick="UpdatePwd()">
+            <div class="mlper3"><img src="../images/confirmcode.png" class="icon mt10"></div>
+            <div class="widper70 inputitem mlper3"> 修改密码</div>
+            <div class="tcenter icon-absolute">
+                <img class="icon" src="../images/next.png" />
+            </div>
+        </div>
+    </div>
+     <div  class="overlay hide">
+        <div class=" closepwd  borderblr bordertlr hide ">
+            <div class="tcenter patb mtonerem">
+                请输入密码
+            </div>
+            <div class="bankclose"></div>
+            <div class="mtonerem sblock " onclick="loadkyboard('sblock', 'txtoldpwd', 'divoldpwd');">
+                <input class="inputpwd numberpwd hide" inputcallback="CheckPwd()" type="tel" maxlength="6" oldvalue="" id="txtoldpwd" />
+                <div class="inputpwd divpwd " id="divoldpwd"></div>
+            </div>
+        </div>
+     </div>
+</body>
+</html>

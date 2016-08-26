@@ -1,0 +1,116 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>智能穿戴介绍</title>
+    <link href="../css/swiper.min.css" rel="stylesheet" />
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <style>
+        .swiper-container {
+            margin-top:0px;
+        }
+         html, body {
+            position: relative;
+            height: 100%;
+        }
+        .swiper-container {
+            width: 100%;
+            height: 100%;
+        }
+        .swiper-slide {
+            text-align: center;
+            font-size: 18px;
+            background: #efeff4;
+            /* Center slide text vertically */
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: -webkit-flex;
+            display: flex;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
+            -webkit-justify-content: center;
+            justify-content: center;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            -webkit-align-items: center;
+            align-items: center;
+        }
+        .swiper-slide img {
+            height:80%;
+            width:auto;
+        }
+        .img {
+            margin-top:-10px;
+        }
+        .animation {
+            -webkit-animation: flipInX 0.5s 0s ease both;
+            -moz-animation: flipInX 0.5s 0s ease both;
+        }
+        @-webkit-keyframes flipInX {
+            100% {
+                -webkit-transform: translateY(10px);
+            }
+        }
+    </style >
+</head>
+<body>
+    <div class="swiper-container swiper-container-horizontal">
+        <div class="swiper-wrapper">
+            <div class="swiper-slide">
+                <img class="img1 img animation " src="../images/school.png">
+            </div>
+            <div class="swiper-slide">
+                <img class="img2 img" src="../images/shoes.png">
+            </div>
+            <div class="swiper-slide">
+                <img class="img3 img" src="../images/smcard.png">
+            </div>
+            <div class="swiper-slide">
+                <img class="img4 img" src="../images/watch.png">
+            </div>
+        </div>
+        <!-- Add Pagination -->
+        <div class="swiper-pagination"></div>
+    </div>
+
+    <script src="../js/swiper.min.js"></script>
+    <script>
+        var hei_ = $(window).height();
+        $('.swiper-wrapper').css('hei_');
+        var swiper = new Swiper('.swiper-container', {
+            pagination: '.swiper-pagination',
+            paginationClickable: true,
+            onSlideChangeEnd: function () {
+                var num = swiper.activeIndex;
+                switch (num) {
+                    case 0: {
+                        //console.log(1);
+                        $('.img').removeClass('animation');
+                        $('.img1').addClass('animation');
+                        break;
+                    }
+                    case 1:
+                       // console.log(1);
+                        $('.img').removeClass('animation');
+                        $('.img2').addClass('animation');
+                        break;
+                    case 2:
+                       // console.log(2);
+                        $('.img').removeClass('animation');
+                        $('.img3').addClass('animation');
+                        break;
+                    case 3:
+                       // console.log(3);
+                        $('.img').removeClass('animation');
+                        $('.img4').addClass('animation');
+                        break;
+                }
+            }
+        });
+        $('.swiper-wrapper').css('hei_');
+    </script>
+</body>
+</html>

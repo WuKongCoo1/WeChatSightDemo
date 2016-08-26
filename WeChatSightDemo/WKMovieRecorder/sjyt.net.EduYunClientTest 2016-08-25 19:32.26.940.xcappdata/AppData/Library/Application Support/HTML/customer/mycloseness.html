@@ -1,0 +1,138 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>我的亲密度</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script type="text/javascript">
+
+        var index = 1;
+        var size = 10;
+        var count = 0;
+        var firstLoad = true;
+        var uid = request('uid');
+        $(document).ready(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            var height = $(window).height();
+            var tabHeight = $('.tabdiv').height();
+            $('.loadmore').css({
+                'min-height': height - tabHeight + 5,
+                'height': height - tabHeight + 5
+            });
+            if ($('.closeness_nav.selected').length == 0) {
+                $('.closeness_nav:eq(0)').addClass('selected');
+            }
+            var searchType = $('.selected').attr('search_type');
+            bindGiftList(searchType);
+            $('.closeness_nav').click(function () {
+                if (!$(this).hasClass('selected')) {
+                    searchType = $(this).attr('search_type');
+                    index = 1;
+                    count = 0;
+                    firstLoad = true;
+                    $('#closenesslist ul').empty();
+                    $('#closenesslist div.loading').show();
+                    $('.closeness_nav').removeClass('selected');
+                    $('.closeness_nav').addClass('unselect');
+                    $(this).addClass('selected');
+                    $(this).removeClass('unselect');
+                    bindGiftList(searchType);
+                }
+            });
+        });
+
+        function bindGiftList(searchType) {
+            if (firstLoad || (index - 1) * size < count) {
+                $.get(domain + 'api/HSCForImageURL/GetClosenessPager', {
+                    uid: uid,
+                    type: searchType,
+                    index: index,
+                    size: size
+                }, function (json) {
+                    var html = '';
+
+                    if (json.rows.length == 0) {
+                        html = '<div class="noleave nodata g-font">哦吼~这里什么都没有</div>';
+                    } else {
+                        $.each(json.rows, function (i, n) {
+                            html += '<li class="wb bb1" onclick="goHisCenter(' + n.uid + ')">';
+                            html += '<div class=" wb widper100">';
+                            if (n.row_index == 1) {
+                                html += '<div class="lh4 ml2 "><img  class="icon mt20" src="../images/nufirst.png" /></div>'
+                            } else if (n.row_index == 2) {
+                                html += '<div class="lh4  ml2"><img  class=" icon  mt20" src="../images/nutwo.png" /></div>'
+                            } else if (n.row_index == 3) {
+                                html += '<div class="lh4  ml2"><img  class=" icon  mt20" src="../images/nuthree.png" /></div>'
+                            } else {
+                                html += '<div class="lh4  ml2 width16"></div>'
+                            }
+
+                            html += '<div class="mt10 ml2"><img class="headimg"  onerror="onerror=null;src=\'../images/default-avatar.png\'"  src="' + (strIsNullOrEmpty(n.img) ? '../images/default-avatar.png"' : n.img + '"') + '/>'
+                            html += '</div>'
+                            html += '<div class="bgimgitem widper70 tleft indentb wb last">'
+                            html += '<div class="widper75 lh4">' + n.real_name + '</div>';
+                            html += '<div class="widper20 tright y-font lh4 mlper6">' + (n.closeness_rate * 100).toFixed(0) + '</div>';
+                            html += '</div>';
+                            html += '</div>'
+                            html += '</li>';
+                        });
+                    }
+                    $('#closenesslist ul').append(html);
+                    $('#closenesslist div.loading').hide();
+                    count = json.total;
+                    index++;
+                    firstLoad = false;
+                }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                });
+            }
+        }
+
+        $(window).scroll(function () {
+            var scrollTop = $(this).scrollTop();
+            var scrollHeight = $(document).height();
+            var windowHeight = $(this).height();
+            if (scrollTop + windowHeight == scrollHeight) {
+                setTimeout(function () {
+                    var searchType = $('.selected').attr('search_type');
+                    bindGiftList(searchType);
+                }, 400);
+            }
+        });
+
+        function goHisCenter(uid) {
+            if (type == "0") {
+                //  surfaceView.goHisCenter(uid);
+                bridge.callHandler('goHisCenter', { uid: uid });
+            }
+            else if (type == "1") {
+                bridge.send({ goHisCenter: uid });
+            } else {
+                error('TA的主页');
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div class="tabdiv tab wb widper60">
+        <div id="from_closeness" search_type="1" class="closeness_nav widper50 selected left"><a href="javascript:void(0)">我在意谁</a></div>
+        <div id="to_closeness" search_type="2" class="closeness_nav  widper50 unselect right"><a href="javascript:void(0)">谁在意我</a></div>
+        <div class="clear"></div>
+    </div>
+    <div id="closenesslist">
+        <div class="mtonerem mlper6 wb widper90"><div class="widper30">排行</div><div class="widper70 tright"><img class="scoreicon" src="../images/closeness.png" />亲密度(%)</div></div>
+        <ul id="" class="clearfix loadmore widper100 bgblock mt10 "></ul>
+        <div class="loading">加载中...</div>
+    </div>
+</body>
+</html>

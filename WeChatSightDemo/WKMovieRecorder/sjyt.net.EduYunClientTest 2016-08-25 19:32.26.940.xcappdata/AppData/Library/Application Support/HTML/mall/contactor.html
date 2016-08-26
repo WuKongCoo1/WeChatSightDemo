@@ -1,0 +1,985 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <!--<script src="../../js/scheduledetail.js"></script>-->
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <link href="../css/contact.css" type="text/css" rel="stylesheet" />
+
+    <title>联系人</title>
+</head>
+<body>
+
+    <input type="button" id="btnback" value="返回" onclick="onClickBack()" />
+    <input type="button" id="btnok" value="确定" onclick="save()" />
+
+    <div class=" pageone page step" step="1">
+        <div class="c-item" onclick="pageTo('school')">
+            <div class="head-div">
+                <img class="headimg" src="../images/contact/school.png" alt="学校" />
+            </div>
+            <div class="flex1 lh4">
+                学校
+            </div>
+            <div class="arrow-div ">
+                <img class="icon" src="../images/next.png" />
+            </div>
+        </div>
+        <div class="c-item" onclick="pageTo('class')">
+            <div class="head-div">
+                <img class="headimg" src="../images/contact/classicon.png" alt="班级" />
+            </div>
+            <div class="flex1 lh4">
+                班级
+            </div>
+            <div class="arrow-div ">
+                <img class="icon" src="../images/next.png" />
+            </div>
+        </div>
+        <div class="c-item" onclick="pageTo('family')">
+            <div class="head-div">
+                <img class="headimg" src="../images/contact/family.png" alt="家人" />
+            </div>
+            <div class="flex1 lh4">
+                家人
+            </div>
+            <div class="arrow-div ">
+                <img class="icon" src="../images/next.png" />
+            </div>
+        </div>
+        <div class="c-item" onclick="pageTo('friend')">
+            <div class="head-div">
+                <img class="headimg" src="../images/contact/mygoodfriend.png" alt="好友" />
+            </div>
+            <div class="flex1 lh4">
+                好友
+            </div>
+            <div class="arrow-div ">
+                <img class="icon" src="../images/next.png" />
+            </div>
+        </div>
+    </div>
+    <!--学校列表-->
+    <div class=" schoolpage hide page step" step="2">
+    </div>
+
+    <!--学校详情-->
+    <div class="schooldetail hide page step" step="3">
+        <div class="tab wb widper60 mbonerem">
+            <div class="widper50 selected pointer tcenter left y-font p14 teachernode">
+                老师
+            </div>
+            <div class="widper50 unselect pointer tcenter right y-font p14 parentnode">家长</div>
+        </div>
+        <div class="teachers node">
+        </div>
+        <div class="parents node hide">
+
+        </div>
+    </div>
+    <!--教师组-->
+    <div class="teachergroup page hide step" step="4">
+        <div class="bgwhite bb1">
+            <div class="check-div">
+                <label class="label relative wid100 classitem" onclick="ischeck(this, true)">
+                    <input type="checkbox" class="ckbox chk_class ckboxout" />
+                    <span class="labelspan">全选</span>
+                </label>
+            </div>
+        </div>
+        <div class="c-item">
+            <div class="check-div">
+                <label class="label relative wid100 classitem" onclick="ischeck(this, true)">
+                    <input type="checkbox" class="ckbox chk_class ckboxout" />
+                </label>
+            </div>
+            <div class="flex1 lh4" onclick="teacherDetail()">
+                <span class="mlhalf">其它老师</span>
+                <span class="ml2">(</span> <span class="y-font">63</span>/64)
+            </div>
+            <div class="arrow-div lh4 ">
+                <img class="icon" src="../images/next.png" />
+            </div>
+        </div>
+    </div>
+
+    <!--教师详情-->
+    <div class="page teacherdetail hide step" step="">
+    </div>
+
+    <!--班级列表-->
+    <div class=" page classpage hide step" step="6">
+    </div>
+
+    <!--班级详情-->
+    <div class="page classdetail hide step" step="">
+
+    </div>
+
+    <!--班级详情1-->
+    <div class="page classdetail1 hide step" step="">
+
+    </div>
+    <!--家庭列表-->
+    <div class="page familypage hide mtonerem step" step="8">
+    </div>
+
+    <!--家庭详情-->
+    <div class="page familydetail mtonerem hide step" step="">
+    </div>
+
+    <!--好友详情-->
+    <div class="page frienddetail hide step" step="">
+    </div>
+
+
+    <script>
+        var uid = request('uid');
+        var arrStep = new Array();
+        $(function () {
+            alert(uid);
+
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    bridge.registerHandler("onClickBack", function (data, responseCallback) {
+                        var close = false;
+                        if (arrStep.length == 0) {
+                            close = true;
+                        }
+                        onClickBack();
+                        var array = {};
+                        if (close) {
+                            array = {
+                                title: null,
+                                url: null,
+                                urlType: 0,
+                                close: true,
+                                children: []
+                            }
+                            responseCallback(array);
+                        }
+
+                    });
+                }, false);
+            }
+            if (type) {
+                $("#btnback").hide();
+                $("#btnok").hide();
+            }
+
+
+
+            $('.teachernode').click(function () {
+                $('.node').addClass('hide');
+                $('.teachers').removeClass('hide');
+                $('.parentnode').removeClass('selected');
+                $('.parentnode').addClass('unselect');
+                $(this).removeClass('unselect');
+                $(this).addClass('selected');
+            })
+            $('.parentnode').click(function () {
+                $('.node').addClass('hide');
+                $('.parents').removeClass('hide');
+                $('.teachernode').removeClass('selected');
+                $('.teachernode').addClass('unselect');
+                $(this).removeClass('unselect');
+                $(this).addClass('selected');
+                var school_id = $(".parents").attr("school_id");
+                //加载家长列表
+                getteacherandgenearch(school_id);
+
+            })
+
+            $(".step").click(function () {
+                var step = $(this).attr("step");
+                if (!strIsNullOrEmpty(step) && (arrStep.length == 0 || arrStep[arrStep.length - 1] != step)) {
+                    arrStep.push(step);
+                }
+            });
+        })
+
+
+        function onClickBack() {
+            if (arrStep.length > 0) {
+                var step = arrStep[arrStep.length - 1];
+                $(".step").addClass('hide');
+                $(".step[step=" + step + "]").removeClass('hide');
+                arrStep = arrStep.slice(0, arrStep.length - 1)
+            }
+            else {
+                error('最后一步了');
+            }
+        }
+
+        function setContactTitle() {
+
+
+
+
+        }
+
+        function pageTo(a) {
+            var pageName = a;
+            switch (pageName) {
+                case 'school': {
+                    $('.page').addClass('hide');
+                    $('.schoolpage').removeClass('hide');
+                    getschool();
+                    break;
+                }
+                case 'class': {
+                    $('.page').addClass('hide');
+                    $('.classpage').removeClass('hide');
+                    getclass();
+                    break;
+                }
+                case 'family': {
+                    $('.page').addClass('hide');
+                    $('.familypage').removeClass('hide');
+                    getcircle();
+                    break;
+                }
+                case 'friend': {
+                    $('.page').addClass('hide');
+                    $('.frienddetail').removeClass('hide');
+                    getfriends();
+                    break;
+                }
+            }
+        }
+
+        function classDetail(class_id) {
+            $('.page').addClass('hide');
+            $('.classdetail').removeClass('hide');
+            getclassdetailbyclassid(class_id);
+
+        }
+
+        function classDetail1(class_id) {
+            $('.page').addClass('hide');
+            $('.classdetail1').removeClass('hide');
+            getclassdetailbyclassid1(class_id);
+
+        }
+        function familyDetail(class_id) {
+            $('.page').addClass('hide');
+            $('.familydetail').removeClass('hide');
+            getclassuserbyclassid(class_id);
+
+        }
+        function schoolDetail(school_id) {
+            $('.page').addClass('hide');
+            $('.schooldetail').removeClass('hide');
+
+            $('.parentnode').removeClass('selected');
+            $('.parentnode').addClass('unselect');
+            $('.teachernode').removeClass('unselect');
+            $('.teachernode').addClass('selected');
+            $(".parents").attr("school_id", school_id);
+            getschooldetail(school_id);
+
+        }
+        function teacherGroup(school_id) {
+            $('.page').addClass('hide');
+            $('.teachergroup').removeClass('hide');
+            getschooltearchergroup(school_id);
+        }
+        function teacherDetail(teacher_group_id) {
+            $('.page').addClass('hide');
+            $('.teacherdetail').removeClass('hide');
+            getschooltearchergroupdetail(teacher_group_id);
+        }
+
+        function getschool() {
+            var hasdata = $(".schoolpage").attr("hasdata");
+            if (hasdata == 1) {
+                return;
+            }
+            //学校
+            $.get(domain + 'api/contact/GetSchoolByUid', {
+                uid: uid
+            }, function (json) {
+                var html = '';
+                if (json.rows.length == 0) {
+                    html = '<div class="nodata noleave mtsevenrem">暂无数据</div>';
+                } else {
+                    for (var i = 0; i < json.rows.length; i++) {
+                        html += '<div class="c-item" onclick="schoolDetail(' + json.rows[i].school_id + ')">';
+                        html += ' <div class="head-div">';
+                        html += '  <img class="headimg" src="../images/contact/school.png" alt="学校" />';
+                        html += '</div>';
+                        html += ' <div class="flex1 lh4">';
+                        html += json.rows[i].school_name;
+                        html += '    <span class="ml2 y-font">(19)</span>';
+                        html += ' </div>';
+                        html += '<div class="arrow-div ">';
+                        html += '   <img class="icon" src="../images/next.png" />';
+                        html += ' </div>';
+                        html += '</div>';
+                        //  html += '<div class_id=' + json.rows[i].class_id + '>' + json.rows[i].name + '</div>';
+                    }
+
+                    $(".schoolpage").html(html);
+                    $(".schoolpage").attr("hasdata", 1);
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+        function loadChild(obj) {
+
+            var tim = $(obj).attr('data-name');
+            if (tim == 1) {
+
+                $(obj).attr('src', '../images/arrow-down.png');
+                $(obj).parents('.gradenode').find('.classnode').removeClass('hide');
+                $(obj).attr("data-name", 0);
+
+            } else {
+                $(obj).attr('src', '../images/contactor/arrow-down.png');
+                $(obj).parents('.gradenode').find('.classnode').addClass('hide');
+                $(obj).attr('src', '../images/next.png');
+                $(obj).attr("data-name", 1);
+            }
+
+        }
+
+        //学校老师外面层
+        function getschooldetail(school_id) {
+            var html = '';
+            html += ' <div class=" c-item" onclick="teacherGroup(' + school_id + ')">';
+            html += '   <div class="head-div">';
+            html += '     <img class="headimg" src="../images/contact/classicon.png" alt="班级" />';
+            html += '    </div>';
+            html += '    <div class="flex1 lh4">';
+            html += '        教师分组';
+            html += '    </div>';
+            html += '    <div class="arrow-div lh4 ">';
+            html += '       <img class="icon" src="../images/next.png" />';
+            html += '    </div>';
+            html += '    </div>';
+            html += '   <div class="bgwhite">';
+            html += '       <div class="check-div">';
+            html += '          <label class="label relative wid100 classitem" onclick="ischeck(this, true)">';
+            html += '               <input type="checkbox" class="ckbox chk_class ckboxout" />';
+            html += '            <span class="labelspan">全选</span>';
+            html += '       </label>';
+            html += '   </div>';
+            html += '   </div>';
+
+            $.get(domain + 'api/contact/GetUserByTypeAndTypeId', {
+                uid: uid,
+                type: 3,
+                type_id: school_id
+            }, function (json) {
+
+                if (json.rows == null || json.rows.length == 0) {
+                    html = '<div class="nodata noleave mtsevenrem">暂无数据</div>';
+                } else {
+                    for (var i = 0; i < json.rows.length; i++) {
+                        html += '<div class="c-item">';
+                        html += '<div class="check-div">';
+                        html += '<label class="label relative widper90 mlper10 classitem" onclick="ischeck(this, true)">';
+                        html += '<input type="checkbox" valuetype="1" value=' + json.rows[i].uid + '  class="ckbox chk_class ckboxout" />';
+                        html += '</label>';
+                        html += '</div>';
+                        html += ' <div class="head-div tright">';
+                        html += '<img class="headimg" src="../images/contact/defaultimg.png" />';
+                        html += '</div>';
+                        html += '<div class="flex1 mt14">';
+                        html += '<div>' + json.rows[i].nick_name + '</div>';
+                        html += '<div class="p14 mt10 g-font">';
+                        html += '杨秀琴';
+                        html += '</div>';
+                        html += '</div>';
+                        html += '<div class="flex1 lh4 g-font">';
+                        //  html += '180****2195';
+                        html += '</div>';
+                        html += '</div>';
+
+                        //html += '<div class_id=' + json.rows[i].class_id + '>' + strIsNullOrEmpty(json.rows[i].name) ? json.rows[i].class_remark : (json.rows[i].name + '(' + json.rows[i].class_remark + ')') + '</div>';
+                    }
+                    html += '<div class="tcenter widper100 c-line">共' + json.rows.length + '位</div>';
+
+                    //$(".teachers").attr("hasdata", 1);
+                }
+                $(".teachers").html(html);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        //权限组
+        function getschooltearchergroup(school_id) {
+
+            //班级
+            $.get(domain + 'api/contact/GetSchoolTeacherGroupByUid', {
+                uid: uid,
+                school_id: school_id
+            }, function (json) {
+                var html = '';
+                if (json.rows.length == 0) {
+                    html = '<div class="nodata noleave mtsevenrem">暂无数据</div>';
+                } else {
+
+                    html += ' <div class="bgwhite bb1">';
+                    html += '    <div class="check-div">';
+                    html += ' <label class="label relative wid100 classitem" onclick="ischeck(this, true)">';
+                    html += '<input type="checkbox" class="ckbox chk_class ckboxout" />';
+                    html += ' <span class="labelspan">全选</span>';
+                    html += ' </label>';
+                    html += ' </div>';
+                    html += ' </div>';
+
+                    for (var i = 0; i < json.rows.length; i++) {
+                        html += ' <div class="c-item">';
+                        html += '   <div class="check-div">';
+                        html += '     <label class="label relative wid100 classitem" onclick="ischeck(this, true)">';
+                        html += '        <input type="checkbox" valuetype="4"  value=' + json.rows[i].teacher_group_id + ' class="ckbox chk_class ckboxout" />';
+                        html += '   </label>';
+                        html += '</div>';
+                        html += '<div class="flex1 lh4" onclick="teacherDetail(' + json.rows[i].teacher_group_id + ')">';
+                        html += ' <span class="mlhalf">' + json.rows[i].name + '</span>';
+                        html += '  <span class="ml2">(</span> <span class="y-font">0</span>/' + json.rows[i].count + ')';
+                        html += '    </div>';
+                        html += '    <div class="arrow-div lh4 ">';
+                        html += '       <img class="icon" src="../images/next.png" />';
+                        html += '  </div>';
+                        html += ' </div>';
+
+                        //html += '<div class_id=' + json.rows[i].class_id + '>' + strIsNullOrEmpty(json.rows[i].name) ? json.rows[i].class_remark : (json.rows[i].name + '(' + json.rows[i].class_remark + ')') + '</div>';
+                    }
+                }
+                $(".teachergroup").html(html);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        //权限组详情
+        function getschooltearchergroupdetail(teacher_group_id) {
+
+            $.get(domain + 'api/contact/GetUserByTypeAndTypeId', {
+                uid: uid,
+                type: 2,
+                type_id: teacher_group_id
+            }, function (json) {
+                var html = '';
+                if (json.rows == null || json.rows.length == 0) {
+                    html = '<div class="nodata noleave mtsevenrem">暂无数据</div>';
+                } else {
+                    html += '<div class="bgwhite">';
+                    html += '<div class="check-div">';
+                    html += '<label class="label relative wid100 classitem" onclick="ischeck(this, true)">';
+                    html += '<input type="checkbox" class="ckbox chk_class ckboxout" />';
+                    html += '<span class="labelspan">全选</span>';
+                    html += '</label>';
+                    html += '</div>';
+                    html += '</div>';
+                    for (var i = 0; i < json.rows.length; i++) {
+                        html += ' <div class="c-item">';
+                        html += '   <div class="check-div">';
+                        html += '     <label class="label relative widper90 mlper10 classitem" onclick="ischeck(this, true)">';
+                        html += '        <input type="checkbox" class="ckbox chk_class ckboxout" />';
+                        html += '   </label>';
+                        html += '  </div>';
+                        html += '<div class="head-div tright">';
+                        html += '     <img class="headimg" src="../images/contact/defaultimg.png" />';
+                        html += '  </div>';
+                        html += '  <div class="flex1 mt14">';
+                        html += '     <div>' + json.rows[i].nick_name + '</div>';
+                        html += '     <div class="p14 mt10 g-font">';
+                        html += '        杨兰';
+                        html += '   </div>';
+                        html += ' </div>';
+                        html += ' <div class="flex1 lh4 g-font">';
+                        // html+='     180****2195';
+                        html += '  </div>';
+                        html += '  </div>';
+                        //html += '<div class_id=' + json.rows[i].class_id + '>' + strIsNullOrEmpty(json.rows[i].name) ? json.rows[i].class_remark : (json.rows[i].name + '(' + json.rows[i].class_remark + ')') + '</div>';
+                    }
+                    html += '<div class="tcenter widper100 c-line">共' + json.rows.length + '位</div>';
+                }
+                $(".teacherdetail").html(html);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        //家长列表
+        function getteacherandgenearch(school_id) {
+
+            $.get(domain + 'api/contact/GetGradeAndClassBySchoolId', {
+                uid: uid,
+                school_id: school_id
+            }, function (data) {
+                var html = '';
+                var grade_ids = "";
+                var chk_class_names = "";
+                var chk_class_ids = "";
+                var is_set = false;
+                if (data.rows == null || data.rows.length == 0) {
+                    html = '<div class="nodata noleave mtsevenrem">暂无数据</div>';
+                } else {
+
+                    for (var i = 0; i < data.rows.length; i++) {
+                        if (data.rows[i].grade_id == 0) {
+                            var class_name = "";
+                            if (!strIsNullOrEmpty(data.rows[i].name)) {
+                                class_name = data.rows[i].name + "班 ";
+                            }
+                            var remark = "";
+                            if (!strIsNullOrEmpty(data.rows[i].remark)) {
+                                remark = data.rows[i].remark;
+                            }
+                            html += ' <div class="gradenode bgwhite">';
+                            html += ' <div class="c-item">';
+                            html += '  <div class="check-div">';
+                            html += '      <label class="label relative wid100 classitem" onclick="ischeck(this, true)">';
+                            html += '       <input type="checkbox" class="ckbox chk_class ckboxout" />';
+                            html += '    </label>';
+                            html += '</div>';
+                            html += '<div class="flex1 lh4">';
+                            html += '   <span class="mlhalf" onclick="classDetail1(' + data.rows[i].id + ')">' + class_name + remark + '</span>';
+                            html += '</div>';
+                            //html += ' <div class="arrow-div lh4 " onclick="loadChild(this)" data-name="1">';
+                            //html += '    <img class="icon" src="../images/next.png" />';
+                            //html += ' </div>';
+                            html += ' </div>';
+                            html += ' </div>';
+                        }
+
+                        if (("," + grade_ids + ",").indexOf("," + data.rows[i].grade_id + ",") < 0) {
+                            if (!strIsNullOrEmpty(data.rows[i].grade_name)) {
+                                html += ' <div class="gradenode bgwhite">';
+                                html += ' <div class="c-item">';
+                                html += '  <div class="check-div">';
+                                html += '      <label class="label relative wid100 classitem" onclick="ischeck(this, true)">';
+                                html += '       <input type="checkbox" class="ckbox chk_class ckboxout" />';
+                                html += '    </label>';
+                                html += '</div>';
+                                html += '<div class="flex1 lh4">';
+                                html += '   <span class="mlhalf">' + data.rows[i].grade_name + '</span>';
+                                html += '</div>';
+                                html += ' <div class="arrow-div lh4 " onclick="loadChild(this)" data-name="1">';
+                                html += '    <img class="icon" src="../images/next.png" />';
+                                html += ' </div>';
+                                html += ' </div>';
+
+                            }
+
+                            for (var j = 0; j < data.rows.length; j++) {
+                                if (data.rows[i].grade_id == data.rows[j].grade_id) {
+                                    var class_name = "";
+                                    if (!strIsNullOrEmpty(data.rows[j].name)) {
+                                        class_name = data.rows[j].name + "班 ";
+                                    }
+                                    var remark = "";
+                                    if (!strIsNullOrEmpty(data.rows[j].remark)) {
+                                        remark = data.rows[j].remark;
+                                    }
+                                    html += ' <div class="classnode widper90 mlper10 mt2 hide">';
+                                    html += '  <div class="c-item">';
+                                    html += '  <div class="check-div">';
+                                    html += '      <label class="label relative wid100 classitem" onclick="ischeck(this, true)">';
+                                    html += '         <input type="checkbox" valuetype="3" value=' + data.rows[j].id + ' class="ckbox chk_class ckboxout" />';
+                                    html += '   </label>';
+                                    html += ' </div>';
+                                    html += '<div class="flex1 lh4">';
+                                    html += '   <span class="mlhalf" onclick="classDetail1(' + data.rows[j].id + ')">' + class_name + remark + '</span>';
+                                    html += '</div>';
+                                    html += '</div>';
+                                    html += ' </div>';
+                                }
+                            }
+
+                            html += ' </div>';
+                        }
+                        grade_ids += data.rows[i].grade_id + ",";
+                    }
+
+                }
+
+                $(".parents").html(html);
+
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+
+        }
+
+        //班级列表
+        function getclass() {
+            var hasdata = $(".classpage").attr("hasdata");
+            if (hasdata == 1) {
+                return;
+            }
+            //班级
+            $.get(domain + 'api/contact/GetClassByUid', {
+                uid: uid
+            }, function (json) {
+                var html = '';
+                if (json.rows == null || json.rows.length == 0) {
+                    html = '<div class="nodata noleave mtsevenrem">暂无数据</div>';
+                } else {
+                    for (var i = 0; i < json.rows.length; i++) {
+                        html += '  <div class="c-item" onclick="classDetail(' + json.rows[i].class_id + ')">';
+                        html += '  <div class="head-div">';
+                        html += '     <img class="headimg" src="../images/contact/classicon.png" alt="班级" />';
+                        html += '   </div>';
+                        html += '   <div class="flex1">';
+                        html += '      <div class="mt14">';
+                        html += strIsNullOrEmpty(json.rows[i].name) ? json.rows[i].class_remark : (json.rows[i].name + '(' + json.rows[i].class_remark + ')');
+                        html += '    <span class="ml2 y-font ">(' + json.rows[i].chatroom_user_count + ')</span>';
+                        html += '   </div>';
+                        html += '  <div class="p14 g-font mt10">';
+                        html += strIsNullOrEmpty(json.rows[i].news) ? '暂无公告' : json.rows[i].news;
+                        html += '  </div>';
+                        html += ' </div>';
+                        html += '  </div>';
+
+                        //html += '<div class_id=' + json.rows[i].class_id + '>' + strIsNullOrEmpty(json.rows[i].name) ? json.rows[i].class_remark : (json.rows[i].name + '(' + json.rows[i].class_remark + ')') + '</div>';
+                    }
+
+                    $(".classpage").attr("hasdata", 1);
+                }
+                $(".classpage").append(html);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function getclassdetailbyclassid(class_id) {
+
+            $.get(domain + 'api/contact/GetClassUserByClassId', {
+                class_id: class_id
+            }, function (json) {
+                var html = '';
+                var html1 = '';
+                var htmlall = '';
+                if (json.rows == null || json.rows.length == 0) {
+                    htmlall = '<div class="nodata noleave mtsevenrem">暂无数据</div>';
+                } else {
+
+
+                    html1 += '  <div class="bgwhite">';
+                    html1 += '  <div class="check-div">';
+                    html1 += '   <label class="label relative wid100 classitem" onclick="ischeck(this, true)">';
+                    html1 += '      <input type="checkbox" class="ckbox chk_class ckboxout" />';
+                    html1 += '     <span class="labelspan">全选</span>';
+                    html1 += '   </label>';
+                    html1 += ' </div>';
+                    html1 += '  </div>';
+                    for (var i = 0; i < json.rows.length; i++) {
+
+                        if (json.rows[i].user_identity != 3) {
+                            html1 += ' <div class="c-item mt10">';
+                            html1 += '<div class="check-div">';
+                            html1 += ' <label class="label relative widper90 mlper10 classitem" onclick="ischeck(this, true)">';
+                            html1 += '    <input type="checkbox" valuetype="1" value=' + json.rows[i].uid + ' class="ckbox chk_class ckboxout" />';
+                            html1 += '   </label>';
+                            html1 += '  </div>';
+                            html1 += '  <div class="head-div tright">';
+                            html1 += '     <img class="headimg" src="../images/contact/defaultimg.png" />';
+                            html1 += ' </div>';
+                            html1 += ' <div class="flex1 mt14">';
+                            html1 += '     <div>' + json.rows[i].real_name + '</div>';
+                            html1 += '   <div class="p12 mt10">';
+                            if (json.rows[i].user_identity == 0) {
+                                html1 += '    <span class="patblrsb creator w-font bgyellow radius10 ">创建者</span>';
+                            } else if (json.rows[i].user_identity == 1) {
+                                html1 += '    <span class="patblrsb creator w-font bggreen  radius10 ">一级管理员</span>';
+                            } else if (json.rows[i].user_identity == 2) {
+                                html1 += '    <span class="patblrsb creator w-font bgblue   radius10 ">二级管理员</span>';
+                            }
+
+
+                            html1 += ' </div>';
+                            html1 += '   </div>';
+                            html1 += '  </div>';
+
+                        }
+                        else {
+
+                            html += ' <div class="c-item">';
+                            html += '    <div class="check-div">';
+                            html += '       <label class="label relative widper90 mlper10 classitem" onclick="ischeck(this, true)">';
+                            html += '       <input type="checkbox"   valuetype="1" value=' + json.rows[i].uid + ' class="ckbox chk_class ckboxout" />';
+                            html += '   </label>';
+                            html += '   </div>';
+                            html += ' <div class="head-div tright">';
+                            html += '   <img class="headimg" src="../images/contact/defaultimg.png" />';
+                            html += ' </div>';
+                            html += ' <div class="flex1 mt14">';
+                            html += '   <div>' + json.rows[i].real_name + '</div>';
+                            html += '   <div class="p14  g-font">';
+                            html += '    杨兰';
+                            html += '  </div>';
+                            html += '  </div>';
+                            html += ' <div class="flex1 lh4 g-font">';
+                            //  html += json.rows[i].tel;
+                            html += '  </div>';
+                            html += '  </div>';
+                        }
+                    }
+                    html += ' <div class="tcenter widper100 c-line">共' + json.rows.length + '位</div>';
+                    htmlall = html1 + ' <div class="bgwhite mtb10 patb indentb">家长</div>' + html;
+
+
+                }
+                $(".classdetail").html(htmlall);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function getclassdetailbyclassid1(class_id) {
+
+            $.get(domain + 'api/contact/GetUserByTypeAndTypeId', {
+                uid: uid,
+                type: 1,
+                type_id: class_id
+            }, function (json) {
+                var html = '';
+                var html1 = '';
+                var htmlall = '';
+                if (json.rows == null || json.rows.length == 0) {
+                    htmlall = '<div class="nodata noleave mtsevenrem">暂无数据</div>';
+                } else {
+
+                    html += '  <div class="bgwhite">';
+                    html += '  <div class="check-div">';
+                    html += '   <label class="label relative wid100 classitem" onclick="ischeck(this, true)">';
+                    html += '      <input type="checkbox" class="ckbox chk_class ckboxout" />';
+                    html += '     <span class="labelspan">全选</span>';
+                    html += '   </label>';
+                    html += ' </div>';
+                    html += '  </div>';
+                    for (var i = 0; i < json.rows.length; i++) {
+
+                        if (json.rows[i].user_identity != 3) {
+                            html1 += ' <div class="c-item mt10">';
+                            html1 += '<div class="check-div">';
+                            html1 += ' <label class="label relative widper90 mlper10 classitem" onclick="ischeck(this, true)">';
+                            html1 += '    <input type="checkbox" valuetype="1" value=' + json.rows[i].uid + ' class="ckbox chk_class ckboxout" />';
+                            html1 += '   </label>';
+                            html1 += '  </div>';
+                            html1 += '  <div class="head-div tright">';
+                            html1 += '     <img class="headimg" src="../images/contact/defaultimg.png" />';
+                            html1 += ' </div>';
+                            html1 += ' <div class="flex1 mt14">';
+                            html1 += '     <div>' + json.rows[i].real_name + '</div>';
+                            html1 += '   <div class="p12 mt10">';
+                            html1 += '    <span class="patblrsb creator w-font bgyellow radius10 "> ' + json.rows[i].user_identity == 0 ? "创建者" : json.rows[i].user_identity == 4 ? "老师" : "管理员" + ' </span>';
+                            html1 += ' </div>';
+                            html1 += '   </div>';
+                            html1 += '  </div>';
+
+                        }
+                        else {
+
+                            html += ' <div class="c-item">';
+                            html += '    <div class="check-div">';
+                            html += '       <label class="label relative widper90 mlper10 classitem" onclick="ischeck(this, true)">';
+                            html += '       <input type="checkbox"   valuetype="1" value=' + json.rows[i].uid + ' class="ckbox chk_class ckboxout" />';
+                            html += '   </label>';
+                            html += '   </div>';
+                            html += ' <div class="head-div tright">';
+                            html += '   <img class="headimg" src="../images/contact/defaultimg.png" />';
+                            html += ' </div>';
+                            html += ' <div class="flex1 mt14">';
+                            html += '   <div>' + json.rows[i].real_name + '</div>';
+                            html += '   <div class="p14  g-font">';
+                            html += '    杨兰';
+                            html += '  </div>';
+                            html += '  </div>';
+                            html += ' <div class="flex1 lh4 g-font">';
+                            //  html += json.rows[i].tel;
+                            html += '  </div>';
+                            html += '  </div>';
+                        }
+                    }
+
+                    html += ' <div class="tcenter widper100 c-line">共' + json.rows.length + '位</div>';
+
+                    htmlall = html1 + ' <div class="bgwhite mtb10 patb indentb">家长</div>' + html;
+                }
+                $(".classdetail1").html(htmlall);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        //获取好友列表
+        function getfriends() {
+            var hasdata = $(".frienddetail").attr("hasdata");
+            if (hasdata == 1) {
+                return;
+            }
+            //好友
+            $.get(domain + 'api/contact/GetFriendsByUid', {
+                uid: uid
+            }, function (json) {
+                var html = '';
+                if (json.rows == null || json.rows.length == 0) {
+                    html = '<div>暂无好友</div>';
+                } else {
+
+                    html += '  <div class="bgwhite';
+                    html += '   <div class="check-div">';
+                    html += '   <label class="label relative wid100 classitem" onclick="ischeck(this, true)">';
+                    html += '     <input type="checkbox" class="ckbox chk_class ckboxout chkall" />';
+                    html += '     <span class="labelspan">全选</span>';
+                    html += '  </label>';
+                    html += '  </div>';
+                    html += '   </div>';
+                    for (var i = 0; i < json.rows.length; i++) {
+                        html += '  <div class="c-item">';
+                        html += '  <div class="check-div">';
+                        html += '     <label class="label relative widper90 mlper10 classitem" onclick="ischeck(this, true)">';
+                        html += '        <input type="checkbox" valuetype="1" value=' + json.rows[i].uid_changed + ' name=' + json.rows[i].nick_name + ' class="ckbox chk_class ckboxout" />';
+                        html += '    </label>';
+                        html += ' </div>';
+                        html += '  <div class="head-div tright">';
+                        html += '      <img class="headimg" src="../images/contact/defaultimg.png" />';
+                        html += '  </div>';
+                        html += '  <div class="flex1  lh4">';
+                        html += json.rows[i].nick_name;
+                        html += ' </div>';
+                        html += ' <div class="flex1 lh4 g-font">';
+                        html += ' </div>';
+                        html += ' </div>';
+                    }
+                    html += ' <div class="tcenter widper100 c-line">共' + json.rows.length + '位</div>';
+                    $(".frienddetail").attr("hasdata", 1);
+                }
+                $(".frienddetail").append(html);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        //获取圈子
+        function getcircle() {
+            var hasdata = $(".familypage").attr("hasdata");
+            if (hasdata == 1) {
+                return;
+            }
+            //圈子
+            $.get(domain + 'api/contact/GetCircleByUid', {
+                uid: uid
+            }, function (json) {
+                var html = '';
+                if (json.rows == null || json.rows.length == 0) {
+                    html = '<div class="nodata noleave mtsevenrem">暂无数据</div>';
+                } else {
+                    for (var i = 0; i < json.rows.length; i++) {
+
+                        html += ' <div class="c-item" class_id=' + json.rows[i].class_id + ' onclick="familyDetail(' + json.rows[i].class_id + ')">';
+                        html += '<div class="head-div">';
+                        html += ' <img class="headimg" src="../images/contact/family.png" alt="家人" />';
+                        html += ' </div>';
+                        html += ' <div class="flex1 lh4">';
+                        html += json.rows[i].name;
+                        html += '   <span class="y-font">（' + json.rows[i].chatroom_user_count + '）</span>';
+                        html += '</div>';
+                        html += ' </div>';
+                        //html += '<div class_id=' + json.rows[i].class_id + '>' + json.rows[i].name + '</div>';
+                    }
+                    $(".familypage").attr("hasdata", 1);
+                }
+                $(".familypage").append(html);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        //获取圈子详情
+        function getclassuserbyclassid(class_id) {
+            //圈子
+            $.get(domain + 'api/contact/GetClassUserByClassId', {
+                class_id: class_id
+            }, function (json) {
+                var html = '';
+                if (json.rows == null || json.rows.length == 0) {
+                    html = '<div class="nodata noleave mtsevenrem">暂无数据</div>';
+                } else {
+                    for (var i = 0; i < json.rows.length; i++) {
+
+                        html += '  <div class="c-item">';
+                        html += '  <div class="check-div">';
+                        html += '   <label class="label relative widper90 mlper10 classitem" onclick="ischeck(this, true)">';
+                        html += '      <input type="checkbox" valuetype="1" value=' + json.rows[i].uid + ' class="ckbox chk_class ckboxout" />';
+                        html += '   </label>';
+                        html += '  </div>';
+                        html += ' <div class="head-div">';
+                        html += '  <img class="headimg" src="../images/contact/defaultimg.png" />';
+                        html += '   </div>';
+                        html += '  <div class="flex1 lh4">';
+                        html += json.rows[i].real_name;
+                        html += '  </div>';
+                        html += '  </div>';
+                    }
+                }
+                $(".familydetail").html(html);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+
+        function save() {
+
+            var teacher_group_ids = new Array();
+            var school_class_ids = new Array();
+            var my_class_ids = new Array();
+            var sel_uids = new Array();
+            $(".chk_class:checked").each(function () {
+                var valuetype = $(this).attr("valuetype"); // 1 uid,2我的班级id，3学校班级id，4组id
+                var value = $(this).val();
+
+                //data: {
+                //        teacher_group_ids: teacher_group_ids,
+                //        school_class_ids: school_class_ids,
+                //        my_class_ids: my_class_ids,
+                //        sel_uids: sel_uids
+                //}
+                if (valuetype == 1) {
+                    sel_uids.push(value);
+                }
+                else if (valuetype == 2) {
+                    my_class_ids.push(value);
+                }
+                else if (valuetype == 3) {
+                    school_class_ids.push(value);
+                }
+                else if (valuetype == 4) {
+                    teacher_group_ids.push(value);
+                }
+            });
+            var jsonstr = {
+                teacher_group_ids: teacher_group_ids.join(','),
+                school_class_ids: school_class_ids.join(','),
+                my_class_ids: my_class_ids.join(','),
+                sel_uids: sel_uids.join(','),
+            }
+            var array = {
+                title: '填写订单',
+                url: 'setReceiveUser(' + JSON.stringify(jsonstr) + ')',
+                urlType: 2,
+                close: true,
+                children: []
+            };
+            appRedirect(array);
+            // console.log(JSON.stringify(jsonstr));
+        }
+
+    </script>
+</body>
+</html>

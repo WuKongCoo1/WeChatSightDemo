@@ -1,0 +1,329 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>今日任务</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script type="text/javascript">
+        var uid = request('uid');
+        var hei_ = $(window).height();
+        $(document).ready(function () {
+            $('body').css('height', hei_- 20);
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            loadtask();
+        });
+        function loadtask() {
+            $.get(domain + 'api/Customer/GetMyTaskByUidNew', {
+                uid: uid
+            }, function (json) {
+                var html = '';
+                var data = json.rows;
+                var todayscore = 0;
+                if (!data.dtTask || data.dtTask == null || data.dtTask.length == 0) {
+                    $("#mytask").append('<div class="nodata noleave mtsevenrem">哦吼~ 这里什么都没有</div>');
+                    $("#mytask").removeClass('bgblock');
+                } else {
+                    $.each(data.dtTask, function (i, n) {
+                        if (data.length - i == 1) {
+                            html += '<div class="adritem pat  mlper6 last  task-item" is_finished = "' + n.is_finished + '" task_id="' + n.id + '" task_type="' + n.task_type + '" >';
+                        } else {
+                            html += '<div class="adritem pat mlper6  task-item " is_finished = "' + n.is_finished + '" task_id="' + n.id + '" task_type="' + n.task_type + '" >';
+                        }
+                        //  html += '<div class="widper10"><img  class="icon" src="../images/over.png"> </div>';
+                        //html += '<div class="wb widper100"><div class="widper60" onclick="goTaskDetail(' + n.id + ', ' + n.task_type + ')">';
+                        html += '<div class="wb widper100 heifourrem   "><div class="widper64  " onclick="goTaskDetail(' + n.id + ', ' + n.task_type + ')">';
+                        html += '<div class=" mlper3 c-line pat nowrap">' + n.task_name + '</div>';
+                        //html += '<div>介绍：' + n.task_intro + '</div>';
+                        if (n.task_type != 3) {
+                            html += '<div class="y-font p15 indent lh12 task-reward-score"> 奖励：<span class="p17 bold">' + n.get_score + '</span><span class="p18 "> 积分</span></div>';
+                        } else {
+                            html += '<div class="y-font p15 indent lh12 task-reward-score"> 奖励：...</div>';
+                        }
+                        html += '</div>';
+                        if (n.enum_task_id == 18) { //签到
+                            html += '<div class=" wid4 heifourrem  v-middle  tcenter task-status   ">' + (n.is_finished ? "<div class='wid4 lh22  btngray  tinybtn'>已签到</div>" : '<div class=" lh22  btnyellow  tinybtn wid4   " onclick="gotask(\'' + n.enum_task_id + '\', ' + n.id + ', ' + n.task_type + ')">签 到</div>') + '</div>';
+                        } else {
+                            html += '<div class=" wid4 heifourrem  v-middle tcenter task-status">' + (n.is_finished ? "<div class='lh22  wid4 btngray  tinybtn'>已完成</div>" : '<div class="lh22  btnyellow  tinybtn  wid4 " onclick="gotask(\'' + n.enum_task_id + '\', ' + n.id + ', ' + n.task_type + ')">做任务</div>') + '</div>';
+                        }
+                        html += '<div class="  heifourrem  tcenter  v-middle  p14 pwhite"> <img class="icon ml-5  width16" src="../images/next.png" /></div>'
+                        html += '</div>'
+                        if (n.task_type == 3) {//持续任务
+                            html += '<div class="y-font p15   task-reward"> ...</div>';
+                            var date = new Date();
+                            if (n.is_finished) {
+                                date.setDate(date.getDate() + 1);
+                                loadContinueReward(n.id, convertDateToString(date));
+                            }
+                            else {
+                                loadContinueReward(n.id, convertDateToString(date));
+                            }
+                        }
+                        html += '</div>';
+
+
+                    });
+                }
+                if (data.dtReward && data.dtReward != null && data.dtReward.length > 0) {
+                    bindReward(data.dtReward);
+                }
+
+                $("#mytask").append(html);
+                $(".loading").hide();
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });;
+        }
+
+        function loadContinueReward(task_id, day) {
+            //已完成的计算明天可以获得的奖励
+            //未完成的计算今天应该获得的奖励
+            $.ajax({
+                url: domain + 'api/Customer/GetTaskReward',
+                async: true,
+                type: 'get',
+                dataType: 'json',
+                data: {
+                    taskId: task_id,
+                    uid: uid,
+                    day: day
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (json) {
+                    if (json.operationStatus == 1) {
+                        if (!strIsNullOrEmpty(json.message)) {
+                            var array = json.message.split('|');
+                            if (array.length > 0) {
+                                var html = '';
+                                var el = $('.task-item[task_id=' + task_id + ']');
+                                for (var x = 0; x < array.length; x++) {
+                                    if (!strIsNullOrEmpty(array[x])) {
+                                        var m = JSON.parse(array[x]);
+
+                                        if (m.score) {//获得积分
+                                            //html += '<div class="widper15 fleft tcenter "> ';
+                                            //html += '<div class="widper100 nowrap"><img class="widper60" src="../images/gold.jpg" alt="积分" /> </div>'
+                                            //html += '<div class="g-font p14">积分 +' + m.score + '</div></div>';
+                                            if (convertStringToDate(day) > convertStringToDate(convertDateToString(new Date()))) {
+                                                el.find(' .task-reward-score').html('明日奖励：<span class="p17 bold">' + m.score + '</span><span class="p18 "> 积分</span>');
+                                            } else {
+                                                el.find(' .task-reward-score').html('奖励：<span class="p17 bold">' + m.score + '</span><span class="p18 "> 积分</span>');
+                                            }
+                                        } else if (m.product_id) {
+                                            //获得物品
+                                            html += '<div class="widper15 fleft tcenter relative ml2 ">';
+                                            if (!strIsNullOrEmpty(m.product_img)) {
+                                                // html += '<div class="widper100 nowrap"><img class="widper60" src=\'' + m.product_img + '\'/></div>';
+                                                html += '<img class="hei26 radius4" src=\'' + m.product_img + '\'/>';
+
+                                            } else {
+                                                // html += '<div class="widper100 nowrap"><img class="widper60" src="../images/prise.jpg"/></div>';
+                                                html += '<img class="hei26 radius4" src="../images/prise.jpg"/>'
+
+                                            }
+                                            // html += '<div class="g-font p14 ">' + m.product_name;
+                                            html += '<div class="posbr bold p12">' + m.quality + '</div></div>';
+                                            html += '</div>';
+                                        }
+
+                                    }
+
+
+                                }
+                                html += '<div class="clear"></div>'
+                                el.find(' .task-reward').html(html);
+                            }
+
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadReceiveReward() {
+            //获取今日获得的奖励
+            $.ajax({
+                url: domain + 'api/Customer/GetTaskReward',
+                async: false,
+                type: 'get',
+                dataType: 'json',
+                data: {
+                    uid: uid
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (json) {
+                    if (json.operationStatus == 1) {
+                        bindReward(json.rows);
+                    }
+                }
+            });
+        }
+
+        //绑定今日获得的任务奖励
+        var style = 'style = "background-color:rgb(254,249,236);border:1px solid #e6e6e6"';
+        function bindReward(data) {
+            var html = '';
+            var htmlScore = '<div class="pat"><div class="inline mtb10  ">今日累计获得奖励:</div>';
+            if (data && data.length > 0) {
+                var htmlProduct = '';
+                //var htmlProduct = '<div class="widper100 wb" style="overflow-x:scroll">';
+                //htmlProduct += '<div class="arright"></div>';
+                $.each(data, function (i, n) {
+                    if (n.reward_type == 1) {
+                        //  html += n.reward_score + '积分';
+                        htmlScore += '<div class="inline mtb10 y-font "><span class="bold p17">' + n.reward_score + '</span><span class="p18 "> 积分</span></div> </div>'
+                    } else if (n.reward_type == 2) {
+
+                        if (!strIsNullOrEmpty(html)) {
+                            htmlProduct += ' ';
+                        }
+                        htmlProduct += '<div class=" ml2  widper15 tcenter relative ">'
+                        if (!strIsNullOrEmpty(n.product_img)) {
+                            htmlProduct += '<img class="hei26 mt-2 radius4"  src="' + n.product_img + '"/>';
+                        } else {
+                            htmlProduct += '<img class="hei26 mt-2 radius4"  src="../images/prise.jpg"/>';
+                        }
+                        // html += '<div class="p12">' + n.product_name + '</div>';
+                        htmlProduct += '<div class="posbr bold p12">' + n.quantity + '</div>';
+                        htmlProduct += '</div>'
+                    }
+                });
+                //htmlProduct += '<div class="widper10"></div></div>';
+                if (!strIsNullOrEmpty(htmlProduct)) {
+                    htmlProduct = '<div class="widper100 wb" style="overflow-x:auto">'
+                        + '<div class="arright"></div>'
+                        + htmlProduct
+                        + '<div class="widper10"></div></div>';
+                }
+            } else {
+                html = '<div class="inline mtb10 y-font  "><span class="p17 bold">0 </span><span class="p18 "> 积分</span></div> </div>';
+            }
+            html = htmlScore + htmlProduct;
+            $('#todayscore').html(html);
+        }
+
+        function gotask(enum_task_id, task_id, task_type) {
+            //1	登录
+            //2	邀请TA人注册
+            //3	完善个人资料
+            //4	布置家庭作业
+            //5	发布学校通知
+            //6	发布学校活动
+            //7	发布考试成绩
+            //8	发布成长足迹
+            //9	成长足迹评论
+            //10 成长足迹点赞
+            //11 赠送礼物
+            //12 购买商品
+            //13 资讯评论/分享
+            //14 APP下载
+            //15 邀请TA人加入班级
+            //16 邀请TA人加入亲友圈
+            //17 用户注册
+            //18 签到
+            if (enum_task_id == 2 || enum_task_id == 3 || enum_task_id == 4 || enum_task_id == 5 || enum_task_id == 6
+                || enum_task_id == 7 || enum_task_id == 8 || enum_task_id == 9 || enum_task_id == 10 || enum_task_id == 11
+                || enum_task_id == 12 || enum_task_id == 13 || enum_task_id == 14) {
+                if (type == "0") {
+                    // surfaceView.goTask(id);
+                    bridge.callHandler('goTask', { id: enum_task_id });
+                } else if (type == "1") {
+                    bridge.send({ goTask: enum_task_id });
+                }
+            } else {
+                if (enum_task_id == 18) {  //签到
+                    doTask(enum_task_id, task_id);
+                } else {
+                    goTaskDetail(task_id, task_type);
+                }
+            }
+        }
+
+        //任务详情
+        function goTaskDetail(task_id, task_type) {
+            var paramArray =
+                    {
+                        title: '任务详情',
+                        url: domain + '/customer/taskdetail.html?uid=' + uid + "&task_id=" + task_id + '&task_type=' + task_type,
+                        urlType: 3,
+                        close: false,
+                        children: []
+                    };
+            appRedirect(paramArray);
+        }
+
+        //做任务
+        function doTask(enum_task_id, task_id) {
+            $.ajax({
+                url: domain + 'api/Customer/DoTask',
+                async: false,
+                type: 'get',
+                dataType: 'json',
+                data: {
+                    enumTaskId: enum_task_id,
+                    uid: uid
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (json) {
+                    //var json = $.parseJSON(data);
+                    if (json.operationStatus == 1) {
+                        if (json.res == 4) {
+                            //alert(json.res);
+                            var taskItemElement = $('.task-item[task_id=' + task_id + ']');
+                            var taskStatusEl = taskItemElement.find('.task-status');
+                            taskStatusEl.children('div').remove();
+                            taskStatusEl.append("<div class='lh22  btngray  tinybtn'>" + (enum_task_id == 18 ? "已签到" : "已完成") + "</div>");
+                            var taskType = taskItemElement.attr('task_type');
+                            if (taskType == 3) {
+                                var date = new Date();
+                                date.setDate(date.getDate() + 1);
+                                loadContinueReward(task_id, convertDateToString(date));
+                            }
+                            loadReceiveReward();
+                        } else {
+                            error(json.message);
+                        }
+                    } else {
+                        error(json.message);
+                    }
+                }
+            });
+        }
+    </script>
+    <style>
+        .adritem:nth-last-child(1) {
+            border-bottom: 0px;
+        }
+
+        .widper15:nth-last-child(1) {
+            margin-right: 2rem;
+        }
+    </style>
+</head>
+<body style="padding-bottom:4rem">
+    <div class="relative bgwhite ">
+        <div class="hkdetail_head tright">
+            <img class="widper100" src="../images/hkdetail_head.png">
+        </div>
+        <div id="mytask" style="padding-top:2.4rem;">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+
+    <div id="todayscore" style="padding-left:4%" class="mb10 bt1 bgwhite posbottom widper100 pab "><div class="mtb10">今日累计获得奖励：0积分</div></div>
+</body>
+</html>

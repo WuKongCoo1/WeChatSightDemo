@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <link href="../../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../../js/jquery-1.6.1.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script src="../../js/usercontrolls.js"></script>
+    <title></title>
+    <script>
+        var uid = request("uid");
+        var class_id = request("class_id");
+        var att_id = request("att_id");
+        var room_id = request("room_id");
+        var user_type = request("user_type");
+        var date = request("date");
+        var is_published = request("is_published");
+        var school_id = request("school_id");
+        if (strIsNullOrEmpty(school_id)) {
+            school_id = 0;
+        }
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            $.ajax({
+                type: "get",
+                async: false,
+                url: domain + "api/HomeSchoolCommunication/GetMyPublishedManualAttendance",
+                data: {
+                    uid: uid,
+                    class_id: class_id,
+                    manual_attendance_id: att_id,
+                    room_id: room_id,
+                    check_attendance_time: date,
+                    is_published: is_published,
+                    school_id: school_id
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                }, success: function (data) {
+                    var listStr = "";
+                    for (var i = 0; i < data.rows.length; i++) {
+                        listStr += "<div class='wb widper100'>"
+                        listStr += "<div class='ml2 tcenter'><div><img  class='icon  mt26 ' src='../../images/timeicon.png'></div><div class='y-line acenter'></div></div>"
+                        listStr += "<div class='widper90'>"
+                        listStr += "<div class='detailblock pab'>"
+                        listStr += "<div class='bglighty heithreerem  bgatten widper100 bordertlr'></div>";
+                        listStr += "<div class='bgwhite patb wb borderblr' onclick='ShowLogList(" + data.rows[i].id + ")'>";                      
+                        listStr += "<div class='mlper3 widper90 '>"
+                        listStr += "<div class='c-line p18 '><span>" + data.rows[i].manual_attendance_name + "</span> <span class='g-font'>" + data.rows[i].creator_name + "</span></div>";
+                        if (!strIsNullOrEmpty(data.rows[i].attendance_name)) {
+                            listStr += "<div class='nowrap widper90 g-font'>" + data.rows[i].attendance_name + "</div>";
+                        }
+                        listStr += "<div class=' g-font mt10 '>考勤时间：<span>" + convertDateTimeToString(parseISO8601(data.rows[i].check_attendance_time)) + "</span></div>";
+                        listStr += "<div class=' g-font'>提交时间：<span>" + convertDateTimeToString(parseISO8601(data.rows[i].create_time)) + "</span></div>";
+                        listStr += "</div>";
+                        listStr += "</div>";
+                        listStr += "</div>";
+                        listStr += "</div>";
+                        listStr += "</div>";
+                    }
+                    if (strIsNullOrEmpty(listStr)) {
+                        $("#list").html("<div class='nodata noleave'>暂无数据</div>");
+                    }
+                    else {
+                        $("#list").html(listStr);
+                    }
+                }
+            });
+        });
+
+        function ShowLogList(id) {
+
+            var array = {
+                title: '手动考勤',
+                url: '/homeschoolcommunication/manualattendance/manualattendancereport.html?uid=' + uid + '&att_id=' + att_id + '&class_id=' + class_id + '&room_id=' + room_id + '&date=' + date + '&is_published=2&report_id=' + id + "&user_type=" + user_type + "&school_id=" + school_id,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+    </script>
+</head>
+<body>
+    <div id="list"></div>
+</body>
+</html>

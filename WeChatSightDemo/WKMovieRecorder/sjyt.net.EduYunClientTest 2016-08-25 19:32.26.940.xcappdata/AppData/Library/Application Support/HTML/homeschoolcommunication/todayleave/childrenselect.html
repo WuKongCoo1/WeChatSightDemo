@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <link href="../../css/jquery.mobile-1.0b1.min.css" rel="stylesheet" />
+    <link href="../../css/jquery.scroller-1.0.2.css" rel="stylesheet" />
+    <link href="../../css/commom.css" type="text/css" rel="stylesheet" />
+    <!--<script src="../../js/jquery-1.10.2.min.js"></script>-->
+    <script src="../../js/jquery-1.6.1.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script src="../../js/usercontrolls.js"></script>
+    <!--<script src="../../js/jquery.mobile-1.0b1.min.js"></script>-->
+    <script src="../../js/jquery.scroller-1.0.2.js"></script>
+    <title>选择请假人</title>
+    <script>
+        var uid = request("uid");
+        var class_id = request("class_id");
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            var student_list = selectStudent(uid, class_id);
+            if (chk_student_count > 0) {
+                if (chk_student_count > 1) {
+                    if (!strIsNullOrEmpty(uid) && !strIsNullOrEmpty(class_id)) {
+
+                        $("#student_list").html(student_list);
+                        $(".chk_student").hide();
+
+                        $(".pab").click(function () {
+                            var obj = $(this).find(".chk_student");
+                            SelectChild($(obj).attr("student_name"), $(obj).val(), $(obj).attr("grade_id"), $(obj).attr("class_id"));
+                        });
+                    }
+                }
+                else {
+                    $("#student_list").html(student_list);
+                    $(".chk_student").hide();
+                    SelectChild($(".chk_student").attr("student_name"), $(".chk_student").val(), $(".chk_student").attr("grade_id"), $(".chk_student").attr("class_id"));
+                }
+            }
+            else {
+                $("#student_list").html("没有子女");
+            }
+        });
+
+        function SelectChild(stu_name, uid, grade_id, class_id) {
+            //error(stu_name+"/"+uid+"/"+grade_id+"/"+class_id);
+            if (!strIsNullOrEmpty(type) && (type == "0" || type == "1")) {
+                var array = {
+                    title: '添加请假条',
+                    url: 'StudentSel(' + uid + ',\'' + stu_name + '\',' + grade_id + ',' + class_id + ')',
+                    urlType: 2,
+                    close: true,
+                    children: []
+                };
+                appRedirect(array);
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="student_list" class="classbg"></div>
+</body>
+</html>

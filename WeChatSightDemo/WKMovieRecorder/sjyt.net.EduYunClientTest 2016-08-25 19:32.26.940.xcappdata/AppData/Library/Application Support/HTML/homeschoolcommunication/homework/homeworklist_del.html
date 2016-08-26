@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <script src="../../js/jquery-1.10.2.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script src="../../js/touchevent.js"></script>
+    <link href="../../css/commom.css" rel="stylesheet" />
+    <title>家庭作业批量删除</title>
+</head>
+<body style="min-height:24rem;">
+<div>
+    <div id="pageContext" class="notice-bg workbg">
+        <div id="button">
+            <!--<button type="button" id="SX" onclick="SX()" class="hmbutton sx">筛选作业</button>-->
+            <!--<button type="button" id="BZ" onclick="BZ()" class="hmbutton bz">布置作业</button>-->
+        </div>
+        <button onclick="showDelBtn()">批量删除</button>
+        <div id="list" class="overflowX">
+            <div class="bgwhite bb1 del-all hide ">
+                <label class="label relative wid100 classitem mlhalf" onclick="ischeck(this, true)">
+                    <input type="checkbox" class="ckbox chk_class ckboxout chkall">
+                    <span class="labelspan mlonerem">全选</span>
+                </label>
+            </div>
+            <div class="bb1 wb relative bgwhite" id="77408990">
+                <div class="widper10 orient-vertical box-center check-div hide">
+                    <label class="label relative wid100 classitem mlhalf" onclick="ischeck(this, true)">
+                        <input type="checkbox" class="ckbox chk_class ckboxout chkall">
+                        <span class="labelspan"></span>
+                    </label>
+                </div>
+                <div class="nitem widper100 relative bgwhite patbb">
+                    <div class="cli" clickevent="GoDetail(77408990,true,null,'get',3218969,this,2779092)"><div class="widper100 wb">
+                        <div class="mlper3">
+                            <img class="hkicon mt10" src="../../images/unread_hkhastitle.png">
+                        </div>
+                        <div class="nowrap widper84 mt10 ">
+                            <div class="wb widper100 indentb">
+                                <div class="  widper60 nowrap">家庭作业</div>
+                                <div class="widper32 g-font tright p15">06-07</div>
+                            </div>
+                            <div class="wb ">
+                                <div class="  g-font widper60 nowrap indentb">进行计算机</div>
+                           </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                <div class="cli">
+                    <button class="hkdelete" type="button" onclick="event.stopPropagation();Del(77408990,'get')">删除</button>
+                </div>
+            </div>
+            <div class="bb1 wb relative bgwhite" id="77408993">
+                <div class="widper10 orient-vertical box-center check-div hide">
+                    <label class="label relative wid100 classitem mlhalf" onclick="ischeck(this, true)">
+                        <input type="checkbox" class="ckbox chk_class ckboxout chkall">
+                        <span class="labelspan"></span>
+                    </label>
+                </div>
+                <div class="nitem widper100 relative bgwhite patbb">
+                    <div class="cli" clickevent="GoDetail(77408990,true,null,'get',3218969,this,2779092)"><div class="widper100 wb">
+                        <div class="mlper3">
+                            <img class="hkicon mt10" src="../../images/unread_hkhastitle.png">
+                        </div>
+                        <div class="nowrap widper84 mt10 ">
+                            <div class="wb widper100 indentb">
+                                <div class="  widper60 nowrap">家庭作业</div>
+                                <div class="widper32 g-font tright p15">06-07</div>
+                            </div>
+                            <div class="wb ">
+                                <div class="  g-font widper60 nowrap indentb">进行计算机</div>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                <div class="cli">
+                    <button class="hkdelete" type="button" onclick="event.stopPropagation();Del(77408990,'get')">删除</button>
+                </div>
+            </div>
+            <div class="bb1 wb relative bgwhite" id="77408991">
+                <div class="widper10 orient-vertical box-center check-div hide">
+                    <label class="label relative wid100 classitem mlhalf" onclick="ischeck(this, true)">
+                        <input type="checkbox" class="ckbox chk_class ckboxout chkall">
+                        <span class="labelspan"></span>
+                    </label>
+                </div>
+                <div class="nitem widper100 relative bgwhite patbb">
+                    <div class="cli" clickevent="GoDetail(77408990,true,null,'get',3218969,this,2779092)"><div class="widper100 wb">
+                        <div class="mlper3">
+                            <img class="hkicon mt10" src="../../images/unread_hkhastitle.png">
+                        </div>
+                        <div class="nowrap widper84 mt10 ">
+                            <div class="wb widper100 indentb">
+                                <div class="  widper60 nowrap">家庭作业</div>
+                                <div class="widper32 g-font tright p15">06-07</div>
+                            </div>
+                            <div class="wb ">
+                                <div class="  g-font widper60 nowrap indentb">进行计算机</div>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                <div class="cli">
+                    <button class="hkdelete" type="button" onclick="event.stopPropagation();Del(77408990,'get')">删除</button>
+                </div>
+            </div>
+            <div class="bb1 wb relative bgwhite" id="7408990">
+                <div class="widper10 orient-vertical box-center check-div hide">
+                    <label class="label relative wid100 classitem mlhalf" onclick="ischeck(this, true)">
+                        <input type="checkbox" class="ckbox chk_class ckboxout chkall">
+                        <span class="labelspan"></span>
+                    </label>
+                </div>
+                <div class="nitem widper100 relative bgwhite patbb">
+                    <div class="cli" clickevent="GoDetail(77408990,true,null,'get',3218969,this,2779092)"><div class="widper100 wb">
+                        <div class="mlper3">
+                            <img class="hkicon mt10" src="../../images/unread_hkhastitle.png">
+                        </div>
+                        <div class="nowrap widper84 mt10 ">
+                            <div class="wb widper100 indentb">
+                                <div class="  widper60 nowrap">家庭作业</div>
+                                <div class="widper32 g-font tright p15">06-07</div>
+                            </div>
+                            <div class="wb ">
+                                <div class="  g-font widper60 nowrap indentb">进行计算机</div>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                <div class="cli">
+                    <button class="hkdelete" type="button" onclick="event.stopPropagation();Del(77408990,'get')">删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function showDelBtn(){
+        $('.del-all').show();
+        $('.check-div').addClass('del-item');
+    }
+</script>
+</body>
+</html>

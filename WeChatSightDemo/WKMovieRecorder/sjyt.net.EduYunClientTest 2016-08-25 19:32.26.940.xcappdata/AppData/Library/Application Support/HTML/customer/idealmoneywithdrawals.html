@@ -1,0 +1,440 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>提现</title>
+    <link href="../css/commom.css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        var uid = request("uid");
+        var RMB_count = 0;
+        var tel = "";
+        $(function () {
+
+            if (type) {
+                $("#btnback").hide();
+            }
+
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    bridge.registerHandler("onClickBack", function (data, responseCallback) {
+                        var index = $(".showstep").attr("index");
+                        var close = (index == 1) ? true : false;
+                        onClickBack();
+                        var array = {};
+                        if (close) {
+                            array = {
+                                title: '爱心钱包',
+                                url: 'backRefresh()',
+                                urlType: 2,
+                                close: true,
+                                children: []
+                            };
+
+                        } else {
+                            array = {
+                                title: '提现',
+                                url: '/customer/idealmoneywithdrawals.html?uid=' + uid,
+                                urlType: 1,
+                                close: false,
+                                children: []
+                            };
+                        }
+                        responseCallback(array);
+
+                    });
+                }, false);
+            }
+
+            // $("#sel_card_number").hide();
+            bindBank();
+
+            //获取用户爱心币数量和可兑换成的人民币数量
+            $.ajax({
+                type: "get",
+                async: true,
+                url: domain + "api/Customer/GetIdealMoneyByUid",
+                data: {
+                    uid: uid
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                }, success: function (data) {
+                    $("#idealMoney").html(data.total);
+                    $("#RMB").html(data.RMB);
+                    RMB_count = data.RMB;
+                    tel = data.tel;
+                }
+            });
+
+        });
+
+        function bindBank() {
+            $.ajax({
+                type: "get",
+                async: true,
+                url: domain + "api/Customer/GetBankCardList",
+                data: {
+                    uid: uid
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (data) {
+                    var listStr = '';
+                    var j = 0;
+                    var hascard = false;
+                    listStr += '<div class="widper80" onclick="moreBank()">'
+                    for (var i = 0; i < data.rows.length; i++) {
+                        if (data.rows[i].card_type == 0) {
+                            hascard = true;
+                            if (j == 0) {
+                                listStr += '<div class="banklist showbank currentbank" bankid="' + data.rows[i].id + '" bank_subbranch="' + (strIsNullOrEmpty(data.rows[i].bank_subbranch) ? "" : data.rows[i].bank_subbranch) + '" onclick="selectBank(' + data.rows[i].id + ')" >' + data.rows[i].bank_name + ' ' + sub(data.rows[i].card_no) + '</div>';
+                                $("#hidbankid").val(data.rows[i].id);
+                                if (!strIsNullOrEmpty(data.rows[i].bank_subbranch)) {
+                                    $("#txtbanksubbranch").val(data.rows[i].bank_subbranch);
+                                }
+
+                            }
+                            else {
+                                listStr += '<div class="banklist hidebank" bankid="' + data.rows[i].id + '" bank_subbranch="' + (strIsNullOrEmpty(data.rows[i].bank_subbranch) ? "" : data.rows[i].bank_subbranch) + '"  onclick="selectBank(' + data.rows[i].id + ')" >' + data.rows[i].bank_name + ' ' + sub(data.rows[i].card_no) + '</div>';
+                            }
+                            j++;
+                        }
+                    }
+                    if (!hascard) {
+                        listStr += '<div class="banklist showbank g-font" onclick="addBank(); event.stopPropagation();">+添加新的银行卡</div>';
+                        listStr += '</div>'
+                    }
+                    else {
+                        listStr += '<div class="banklist hidebank g-font" onclick="addBank();">+添加新的银行卡</div>';
+                        listStr += '</div>'
+                        listStr += '<div class="widper20"><span id="bankmore" onclick="moreBank()"  class="bankmore bankmorebg"></span> </div>'
+                    }
+                    $("#selectbank").html(listStr);
+                }
+            });
+        }
+
+        function finish() {
+            var pwd = $("#txtpwd").attr("oldvalue");
+            pop('正在提交');
+            $.get(domain + 'api/mall/CheckPwd', {
+                uid: uid,
+                pwd: pwd
+            }, function (data) {
+                if (data.operationStatus == 1) {
+                    //验证成功，提交提现数据
+                    $.ajax({
+                        type: "get",
+                        async: true,
+                        url: domain + "api/Customer/IdealMoneyWithdrawals",
+                        data: {
+                            uid: uid,
+                            bank_card_id: $("#hidbankid").val(),
+                            RMB: $("#withdrawals_RMB").val(),
+                            bank_subbranch: $("#txtbanksubbranch").val()
+                        },
+                        error: function (XMLHttpRequest, textStatus, errorThrown) {
+                            error("提交失败");
+                            clearpop();
+                        }, success: function (data) {
+                            clearpop();
+                            if (data.res == "1") {
+                                //提交成功
+                                var array = {
+                                    title: '提现成功',
+                                    url: '/customer/idealMoneyWithdrawalsFinish.html?id=' + data.virtual_currency_detail_id,
+                                    urlType: 1,
+                                    close: false,
+                                    isShut: true,
+                                    shutAll: false,
+                                    children: []
+                                };
+                                appRedirect(array);
+                            }
+                            else if (data.res == "2") {
+                                error("余额不足");
+                                currentStep(1);
+
+                            }
+                            else if (data.res == "3") {
+                                error("今日提现金额已达到上限，请下次再进行提现");
+                                currentStep(1);
+                            }
+                            else {
+                                error("提交失败，请稍后重试");
+                                //var array = {
+                                //    title: '提现',
+                                //    url: '/customer/idealMoneyWithdrawals.html?uid=' + uid,
+                                //    urlType: 1,
+                                //    close: false,
+                                //    children: []
+                                //};
+                                //appRedirect(array);
+
+                            }
+                        }
+                    });
+                }
+                else {
+                    $("#txtpwd").val('').attr("oldvalue", '');
+                    $("#divpwd").text('');
+                    error(data.message);
+                    clearpop();
+                }
+
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                clearpop();
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function Next() {
+
+            var bank_id = $("#hidbankid").val();
+            var RMB = $("#withdrawals_RMB").val();
+            var banksubbranch = $("#txtbanksubbranch").val();
+            if (strIsNullOrEmpty(bank_id)) {
+                error("请选择或添加银行卡");
+                return;
+            }
+            if (strIsNullOrEmpty(banksubbranch)) {
+                error("请输入开户行银行支行");
+                return;
+            }
+            if (strIsNullOrEmpty(RMB)) {
+                error("请输入提现金额");
+                return;
+            }
+            if (!isInt(RMB)) {
+                error("提现金额请输入整数");
+                return;
+            }
+            var RMBInt = parseInt(RMB);
+            if (RMBInt < 100 || RMBInt > 500) {
+                error("提现金额范围输入错误");
+                return;
+            }
+
+            $.get(domain + 'api/customer/CheckHasPwd', {
+                uid: uid
+            }, function (json) {
+                if (json.flag == "true") {
+                    currentStep(2);
+                    loadkyboard('sblock', 'txtpwd', 'divpwd');
+                } else {
+                    choiceboxhastitle("支付提醒",
+                        "你还没有设置支付密码，为了保证资金安全，建议去设置",
+                        "去设置",
+                        function () {
+                            var callbackurl = "/customer/idealmoneywithdrawals.html" + window.location.search;
+                            var array = {
+                                title: '设置支付密码',
+                                url: '/customer/updatePwd.html?uid=' + uid + '&position=withdrawals&isfirst=true&callbackurl=' + encodeURIComponent(callbackurl),
+                                urlType: 1,
+                                close: false,
+                                children: []
+                            };
+                            appRedirect(array);
+                        },
+                        "取消",
+                        function () {
+                            $('.overlay').hide();
+                        });
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+
+        }
+
+        function selectBank(id) {
+            $(".banklist").removeClass("showbank").addClass("hidebank");
+            $(".banklist[bankid=" + id + "]").removeClass("hidebank").addClass("showbank");
+            $("#hidbankid").val(id);
+            $("#txtbanksubbranch").val($(".banklist[bankid=" + id + "]").attr("bank_subbranch"));
+
+        }
+
+        function selectBankList() {
+            var array = {
+                title: '银行卡',
+                url: '/customer/bankcard.html?uid=' + uid + "&position=withdrawals",
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+        var i = 0;
+        function moreBank() {
+            var bankid = $("#hidbankid").val();
+            i++;
+            if (i % 2 == 1) {
+                $(".banklist").removeClass("hidebank").addClass("showbank").removeClass('currentbank');
+                $('.bankmore').removeClass('bankmorebg').addClass('bankupbg');
+                $('.selectbankl').css('height', 'auto');
+                $(".banklist[bankid=" + bankid + "]").addClass("showbank").removeClass("hidebank").addClass('currentbank');
+            } else {
+                $(".banklist").removeClass("showbank").addClass("hidebank").removeClass('currentbank');;
+                $('.selectbankl').css('height', '3rem');
+                $('.bankmore').removeClass('bankupbg').addClass('bankmorebg');
+                $(".banklist[bankid=" + bankid + "]").addClass("showbank").removeClass("hidebank").addClass('currentbank');
+            }
+        }
+        //function moreBank() {
+        //    var bankid = $("#hidbankid").val();
+        //    if ($("#bankmore").html() == "") {
+        //        $(".banklist").removeClass("showbank").addClass("hidebank");
+        //        $("#bankmore").html("");
+        //        $(".banklist[bankid=" + bankid + "]").addClass("showbank").removeClass("hidebank");
+        //    }
+        //    else {
+        //        $(".banklist").removeClass("hidebank").addClass("showbank");;
+        //        $("#bankmore").html("");
+        //        $(".banklist[bankid=" + bankid + "]").addClass("showbank").removeClass("hidebank");
+        //    }
+        //}
+
+        function addBank() {
+            var array = {
+                title: '添加银行卡',
+                url: '/customer/bankCardAdd.html?uid=' + uid + "&position=withdrawals",
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+
+        function WithdrawalsRecord() {
+            var array = {
+                title: '提现记录',
+                url: '/customer/idealMoneyWithdrawalsRecord.html?uid=' + uid,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+
+        //当前显示的index
+        function currentStep(index) {
+            $(".step").removeClass("showstep").addClass("hidestep");
+            $(".step[index=" + index + "]").removeClass("hidestep").addClass("showstep");
+            if (index == 1) {
+                var paramArray =
+                {
+                    title: '提现',
+                    children: []
+                };
+                resetTitle(paramArray);
+            }
+            else if (index == 2) {
+                var paramArray =
+                {
+                    title: '验证支付密码',
+                    children: []
+                };
+                resetTitle(paramArray);
+            }
+            $("#txtpwd").attr("oldvalue", '');
+            $("#txtpwd").val('');
+
+        }
+
+        function onClickBack() {
+            var index = $(".showstep").attr("index");
+            if (index == 1 && type == "0") {
+                var array = {
+                    title: '爱心钱包',
+                    url: '/customer/myidealmoney.html?uid=' + uid,
+                    urlType: 1,
+                    close: true,
+                    children: []
+                };
+                appRedirect(array);
+            }
+            else {
+                currentStep((parseInt(index) - 1));
+            }
+        }
+        function backRefresh() {
+            bindBank();
+        }
+    </script>
+    <style type="text/css">
+        .showbank {
+            display: block;
+        }
+
+        .hidebank {
+            display: none;
+        }
+
+        .showstep {
+            display: block;
+        }
+
+        .hidestep {
+            display: none;
+        }
+
+        input.red {
+            color: #f00;
+        }
+    </style>
+</head>
+<body>
+    <input type="button" id="btnback" onclick="onClickBack()" value="返回" />
+    <div id="first" class="step showstep" index="1">
+        <div class="bgblock mtonerem">
+            <!--<div id="user_money">爱心币<span id="idealMoney"></span> 可提现<span id="RMB"></span></div>
+            >-->
+            <div id="selectbank" class="adritem oneline mlper6  wb selectbankl"><div class="widper80" onclick="moreBank()"><div class="banklist showbank g-font" onclick="addBank(); event.stopPropagation();">+添加新的银行卡</div></div></div>
+            <div class="bgitem oneline mlper6">
+                <input type="text" placeholder="请填写开户行所属支行" id="txtbanksubbranch" class="widper90" />
+            </div>
+            <input id="withdrawals_RMB" placeholder="输入提现金额" maxlength="10" class="bgitem oneline mlper6 last number" type="number" />
+        </div>
+        <div class="widper100 wb mtb10  g-font">
+            <div class=" tleft p14 mlper6">说明:</div>
+            <div class="widper80 p14 indentb">
+                <div> 100.00<=单次提现金额<=500.00</div>
+                <div>每天提现总额<=2000.00</div>
+            </div>
+        </div>
+        <div>
+            <div class="tcenter">
+                <input type="button" value="下一步" onclick="Next()" class="btn btnbig btnwhite mtb10" />
+            </div>
+            <div class="tcenter wb">
+                <div class="widper55 tright mlper6">
+                    <a href="javascript:void(0);" onclick="WithdrawalsRecord()" class="p15 g-font">查看提现记录</a>
+                </div>
+                <div>
+                    <img class="icon mt-2" src="../images/next.png" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="second" class="step hidestep" index="2">
+        <div class="tcenter patb">
+            请输入支付密码
+        </div>
+        <!--<input id="code" maxlength="5" placeholder="请输入手机验证码" />-->
+        <div class="mtonerem sblock">
+            <input id="txtpwd" maxlength="6" class="inputpwd numberpwd hide" inputcallback="finish()" oldvalue="" type="tel" />
+            <div class="inputpwd divpwd " id="divpwd"></div>
+        </div>
+        <!--<input type="button" value="完成" id="finish" />-->
+    </div>
+    <input type="hidden" id="hidbankid" />
+</body>
+</html>

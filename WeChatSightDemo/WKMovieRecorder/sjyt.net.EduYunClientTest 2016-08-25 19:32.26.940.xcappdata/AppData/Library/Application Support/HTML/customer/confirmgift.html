@@ -1,0 +1,271 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>确认订单</title>
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script type="text/javascript">
+        var uid = request('uid');
+        var addressid = request('addressid');
+        var id = request('id');
+        var discount = 0;
+        var receive_closeness = 0;
+        $(document).ready(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            bind();
+        });
+
+        function bind() {
+            if (!strIsNullOrEmpty(id) && !strIsNullOrEmpty(uid)) {
+                $.get(domain + 'api/customer/GetGiftDetailByIdNew', {
+                    id: id,
+                    uid: uid
+                }, function (data) {
+                    var json = data.rows[0];
+                    if (!strIsNullOrEmpty(json.order_number)) {
+                        discount = Math.ceil(json.discount);
+                        receive_closeness = json.receive_closeness;
+                        var html = '';
+                        html += "<div class='bgblock wb'>";
+                        html += '<div>'
+                        html += '<div class="orderimg">'
+                        html += '<img   src="' + (strIsNullOrEmpty(json.product_img) ? '../images/default-product.png' : json.product_img) + '" alt="' + json.product_name + '"/>';
+                        html += '</div>'
+                        html += '</div>';
+                        html += '<div>'
+                        html += '<div class="mt10 g-line">' + json.name + '</div>';
+
+                        html += '<div class="c-line">数量：' + json.quantity + '</div>';
+                        if (json.order_pay_type_id == 4) {
+                            html += '<div class="c-line">单价：' + json.discount + '积分</div>';
+                            // html += '<div class="c-line">' + json.discount + '爱心币</div>';
+                        }
+                        else {
+                            html += '<div class="c-line">单价：' + json.discount + '元</div>';
+                        }
+
+
+                        html += '</div>';
+                        html += '</div>';
+                        //规格
+                        if (json.ordered_product_spec != null && json.ordered_product_spec.length > 0) {
+                            var specs = $.parseJSON(json.ordered_product_spec);
+                            $.each(specs, function (index, x) {
+                                if (x != null && x.spec_group_name && x.display_name) {
+                                    html += '<div>' + x.spec_group_name + '：' + x.display_name + '</div>';
+                                }
+                            });
+                        }
+                        //html += '<div> <img src="' + (strIsNullOrEmpty(json.product_img) ? '../images/default-product.png' : adminURL + 'upload_product_img/1/thumbnail_' + json.product_img) + '" /></div>';
+                        //html += '<div>礼物名称：' + json.name + '</div>';
+                        //html += '<div>礼物数量：' + json.quantity + '</div>';
+                        html += '<div id="myaddress"></div>';
+                        html += '<div class="bottom wb">';
+                        html += '<div class="widper100">';
+                        html += '<input type="button"  class="btn  btnbig  btnwhite widper100" value="提交订单" onclick="confirmOrder()"/>';
+                        html += '</div>';
+                        html += '</div>';
+                        $('#div_order').append(html);
+                        //如果传了地址id就根据地址id查询，入股没传更具用户uid查询默认地址
+                        if (addressid && addressid != "") {
+                            loadaddressbyid(addressid);
+                        }
+                        else {
+                            loadaddress(uid);
+                        }
+
+                    } else {
+                        $('#div_order').append('<div>暂无数据<div/>');
+                    }
+                }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                });
+            } else {
+                $('#div_order').append('<div>参数有误<div/>');
+            }
+        }
+
+        //加载用户默认地址
+        function loadaddress(uid) {
+            $.get(domain + 'api/mall/GetDefaultAddressByUid', {
+                uid: uid
+            }, function (json) {
+                var html = '';
+                if (json.model == null) {
+                    html = '<div class="bgblock oneline patb indentb mtb5 y-font wb"onclick="addAddress()"><div class="widper80">+添加收货地址</div>';
+                    html += '<div class = "widper10">';
+                    html += '<img  class="icon mt3" src="../images/next.png" />';
+                    html += '</div>'
+                    html += '</div>'
+                } else {
+                    var ad = json.model;
+                    $("#hidaddressid").val(ad.id);
+                    html += '<div class="mlper6 pat mt10 mb10">收货信息</div>';
+                    html += '<div class="bgblock  wb">';
+                    html += '<div class="widper90" onclick="selectAddress()">';
+                    html += '<div class="adritem mlper6 last">' + ad.linkman + '</div>';
+                    html += '<div class="adritem mlper6 last ">' + ad.phone_number + '</div>';
+                    html += '<div class="adritem mlper6  last ">' + ad.province_name + ad.city_name + ad.area_name + ad.full_address + '</div>';
+                    html += '</div>';
+                    html += '<div class = "widper10">';
+                    html += '<img  class="adricon" src="../images/next.png" />';
+                    html += '</div>'
+                    html += '</div>';
+                }
+                $('#myaddress').html(html);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+        //根据地址id加载地址
+        function loadaddressbyid(id) {
+            $.get(domain + 'api/mall/GetAddressDetail', {
+                id: id
+            }, function (json) {
+                var html = '';
+                if (json.model == null) {
+                    html = '<div class="bgblock oneline patb indentb mtb5 y-font wb"onclick="addAddress()"><div class="widper80">+添加收货地址</div>';
+                    html += '<div class = "widper10">';
+                    html += '<img  class="icon mt3" src="../images/next.png" />';
+                    html += '</div>'
+                    html += '</div>'
+                } else {
+                    var ad = json.model;
+                    $("#hidaddressid").val(ad.id);
+                    html += '<div class="mlper6 pat mt10 mb10">收货信息</div>';
+                    html += '<div class="bgblock  wb">';
+                    html += '<div class="widper90" onclick="selectAddress()">';
+                    html += '<div class="adritem mlper6 last">' + ad.linkman + '</div>';
+                    html += '<div class="adritem mlper6 last ">' + ad.phone_number + '</div>';
+                    html += '<div class="adritem mlper6  last ">' + ad.province_name + ad.city_name + ad.area_name + ad.full_address + '</div>';
+                    html += '</div>';
+                    html += '<div class = "widper10">';
+                    html += '<img  class="adricon" src="../images/next.png" />';
+                    html += '</div>'
+                    html += '</div>';
+                }
+                $('#myaddress').html(html);
+            }).error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+
+        //js设置地址
+        function setAddressId(id) {
+            addressid = id;
+            loadaddressbyid(id)
+        }
+
+        //选择地址
+        function selectAddress() {
+
+            var callbackurl = "/customer/confirmgift.html" + window.location.search;
+            var paramArray =
+            {
+                title: '选择地址',
+                url: '/mall/addresslist.html?uid=' + uid + '&position=confirmgift&callbackurl=' + encodeURIComponent(callbackurl),
+                urlType: 1,
+                close: false,
+                children: [{
+                    title: '添加地址',
+                    url: 'addAddress()',
+                    urlType: '2'
+                }]
+            };
+            appRedirect(paramArray);
+        }
+        //添加地址
+        function addAddress() {
+            var callbackurl = "/customer/confirmgift.html" + window.location.search;
+            var paramArray =
+            {
+                title: '地址添加',
+                url: '/mall/addaddress.html?uid=' + uid + '&position=confirmgift&callbackurl=' + encodeURIComponent(callbackurl),
+                urlType: 1,
+                close: false,
+                children: [{
+                    title: '保存',
+                    url: 'addAddress()',
+                    urlType: '2'
+                }]
+            };
+            appRedirect(paramArray);
+        }
+
+        function confirmOrder() {
+            var addressid = $("#hidaddressid").val();
+            if (!addressid) {
+                error('请选择地址');
+                return;
+            }
+            choicetwo('提交订单后，系统将为您安排发货，确定提交订单吗？',
+                '取消',
+                function () { $('.overlay').hide(); },
+                '确定',
+                function () {
+                    pop('正在提交');
+                    var reply = "";
+                    $.get(domain + 'api/customer/GiftUpdate',
+                        {
+                            uid: uid,
+                            id: id,
+                            operation_type: 3,
+                            reply: reply,
+                            address_id: addressid
+                        },
+                        function (json) {
+                            clearpop();
+                            if (json.res == 1) {
+                                var content = "";
+                                if (receive_closeness == 0 || strIsNullOrEmpty(receive_closeness)) {
+                                    content = "订单已提交，请耐心等待发货，您可以在“我的订单”中查看订单状。"
+                                }
+                                else {
+                                    content = '订单已提交，请耐心等待发货，您可以在“我的订单”中查看订单状<br>态亲密度+' + receive_closeness
+                                }
+                                choiceone(content, '关闭', function () {
+                                    var paramArray =
+                                   {
+                                       title: '礼物详情',
+                                       url: '/customer/giftdetail.html?uid=' + uid + "&id=" + id,
+                                       urlType: 1,
+                                       close: true,
+                                       children: []
+                                   };
+                                    appRedirect(paramArray);
+                                })
+                            }
+                            else if (json.res = -2) {
+                                error('地址不存在可能已删除');
+                                $('.overlay').hide();
+                            }
+                            else {
+                                error('提交失败');
+                                $('.overlay').hide();
+                            }
+                        }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                            clearpop();
+                            error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                        });
+                });
+
+        }
+    </script>
+</head>
+<body>
+    <div class="mlper6 patb">订单信息</div>
+    <div id="div_order">
+    </div>
+    <input type="hidden" id="hidaddressid" />
+</body>
+</html>

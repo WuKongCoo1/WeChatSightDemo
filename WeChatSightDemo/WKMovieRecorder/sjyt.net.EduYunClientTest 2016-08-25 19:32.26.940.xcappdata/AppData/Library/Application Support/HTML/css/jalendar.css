@@ -1,0 +1,274 @@
+/*@import url(http://fonts.googleapis.com/css?family=Fugaz+One);
+@import url(http://fonts.googleapis.com/css?family=Roboto:300);*/
+
+#div_calendar ,#div_continue_task ,article{
+    -webkit-tap-hightlight-color:rgba(0,0,0,0);
+}
+*{
+    -webkit-tap-hightlight-color:rgba(0,0,0,0) !important;
+}
+*:active{
+    -webkit-tap-hightlight-color:rgba(0,0,0,0) !important;
+}
+*:hover{
+    -webkit-tap-hightlight-color:rgba(0,0,0,0) !important;
+}
+.jalendar {
+    position: relative;
+    width: 300px;
+   /* margin: 30px auto;*/
+}
+.jalendar .left {
+    float: left;
+}
+.jalendar .clear {
+    clear: both;
+}
+.jalendar.mid {
+    /*width: 420px;*/
+    width: 100%;
+}
+.jalendar .added-event {
+    display: none;
+}
+.jalendar-wood {
+    position: relative;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    display: inline-block;
+    z-index: 2;
+    margin-bottom: 0.3rem;
+
+}
+.jalendar-pages {
+    position: relative;
+    background-color:rgb(254,249,236);
+    /*border-radius: 2px;*/
+    /*box-shadow: 0px 1px 4px #444;*/
+    display: inline-block;
+    width: 100%;
+    border-bottom:#eae5d9;
+    /*float: left;*/
+}
+.jalendar .pages-bottom {
+    position: absolute;
+    /*border-radius: 0 0 2px 2px;*/
+    height: 4px;
+    bottom: -4px;
+    /*left: 1%;*/
+    width:100%;
+    /*box-shadow: 0 2px 3px rgba(0,0,0,0.5), inset 0 1px 2px rgba(0,0,0,0.5);*/
+    background: #fff;
+}
+.jalendar-pages > .header {
+    text-align: center;
+    background:-webkit-linear-gradient(top,rgb(254,180,116),rgb(255,132,114));
+    position: relative;
+    /*border-radius: 3px 3px 0 0;*/
+    /*box-shadow: 0px 1px 2px rgba(0,0,0,0.2), inset 0 -1px 0 rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.7), inset 0 -10px 20px rgba(0,0,0,0.2), inset 0 40px 40px rgba(255,255,255,0.3);*/
+    overflow: hidden;
+}
+.jalendar-pages > .header h1 {
+    margin: 13px 0 0 0;
+    padding: 0;
+    display: inline-block;
+    font: 24px "Roboto", Arial, Helvetica, Geneva, sans-serif;
+    color: #fff;
+    text-shadow: 0 -1px 3px rgba(0,0,0,0.5);
+}
+.jalendar-pages > .header .prv-m, 
+.jalendar-pages > .header .nxt-m {
+    text-decoration: none;
+    width: 3rem;
+    position: absolute;
+    display: inline-block;
+    height: 2rem;
+    background: url('../images/jalendar-sprite.png') no-repeat ;
+    top: 15px;
+    cursor: pointer;
+   -webkit-tap-highlight-color: rgba(0,0,0,.1);
+   background-position:center;
+}
+.jalendar-pages > .header .prv-m {
+    background-position: 15px 0;
+    left: 20px;
+}
+.jalendar-pages > .header .nxt-m {
+    background-position: -34px 0;
+    right: 20px;
+}
+.jalendar-pages > .header .day-names {
+    margin: 10px 10px 0 10px;
+    overflow: hidden;
+    text-align: center;
+    font-size: 0;
+}
+.jalendar-pages > .header h2 {
+    display: inline-block;
+    width: 14%;
+    padding: 7px 0 0 0;
+    text-indent: 1px;
+    text-align: center;
+    margin: 0;
+    /*background: url('../images/jalendar-sprite.png') no-repeat 0 -41px;*/
+    height:1.6rem;
+    font: 1.3rem "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+    /*text-shadow: 0 1px 0 #000;*/
+    color: #fff;
+}
+.jalendar .header h2:first-child {
+    background: none !important;
+}
+
+.jalendar .days {
+    /*margin: 10px 10px 20px 10px;*/
+    font-size: 0;
+    text-align: center;
+}
+.jalendar .days .day {
+    display: inline-block;
+    width: 12%;
+    height: 60px;
+    padding:0.3rem;
+    padding-top:0.4rem;
+    /*border-top: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;*/
+    font: 1.2rem "Roboto", "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    color: #666;
+    cursor: pointer;
+    position: relative;
+    margin:1% 1%;
+}
+.jalendar.mid .days .day {
+    height: 2.8rem;
+    font-size: 1rem;
+    /*padding-top: 0.2rem;*/
+    line-height: 1.9rem;
+}
+.jalendar .days .day.selected {
+    /*box-shadow: inset 0 5px 15px rgba(255,255,255,0.4), inset 0 -10px 10px rgba(0,0,0,0.2);*/
+    color: #fff;
+    border-radius:2rem;
+    /*background-color:rgb(255,132,114);
+    box-shadow:0px 5px 8px rgb(255,132,114);*/
+    background-image:url(../images/dote.png);
+    background-size:auto 100%;
+    background-position:center center;
+    background-repeat:no-repeat
+}
+
+.jalendar .days .day.today.selected {
+    color: #fff !important;
+}
+.jalendar .days .day > .event-single {
+    display: none;
+}
+.jalendar .days .day.selected > i {
+    display: none;
+}
+.jalendar .days .day > i {
+    position: absolute;
+    right: -1px;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    background: url(../images/jalendar-sprite.png) 0 -580px;
+}
+
+.jalendar .add-event {
+    /*float: right;*/
+    display: none;
+    width: 94%;
+    margin-left: 3%;
+    margin-top:0.8rem;
+}
+.jalendar .add-new {
+    margin: 0 0 20px 0;
+    border-radius: 0 0 3px 3px;
+    position: relative;
+}
+
+.jalendar .add-new input[type="text"] {
+    padding: 5px 15px;
+    box-sizing: border-box;
+    border: none;
+    width: 100%;
+    border-radius: 30px;
+    /*box-shadow: 0 2px 2px rgba(255,255,255,1), inset 0 2px 5px rgba(0,0,0,0.4);*/
+    font: 18px "Roboto", "Helvetica Neue", Arial;
+    color: #fff;
+    background-color: rgba(0,0,0,0.1);
+    outline: none;
+    margin: 0 0 15px 0;
+}
+.jalendar .events {
+    height: 200px;
+    position: relative;
+}
+.jalendar .events h3 {
+    background: url(../images/jalendar-sprite.png) center -532px no-repeat;
+    display: inline-block;
+    width: 100%;
+    font: 20px "Roboto", "Helvetica Neue", Arial;
+    color:#333;
+    text-shadow: 0 1px 1px #fff;
+    text-align: center;
+    margin: 0 0 10px 0;
+}
+.jalendar .events h3 span {
+    display: inline-block;
+    background: url(../images/jalendar-wood-bg.png);
+    padding: 0 10px;
+}
+.jalendar .events .events-list {
+    max-height: 100%;
+    overflow-x: auto;
+    padding: 2px 2px 0 2px;
+    position: relative;
+    z-index: 2;
+}
+.jalendar .events .gradient-wood {
+    position: absolute;
+    z-index: 1;
+    bottom: -39px;
+    display: none;
+    left: -1%;
+    width: 102%;
+    height: 2px;
+    /*border-radius: 10px;*/
+    background-color: rgba(0,0,0,0.45);
+    /*box-shadow: 0 1px 2px #fff;*/
+}
+.jalendar .events .event-single {
+    background: url(../images/jalendar-sprite.png) 0 -90px;
+    border-radius: 7px;
+    /*box-shadow: 0 1px 4px rgba(0,0,0,0.75);*/
+    margin: 0 0 10px 0;
+}
+.jalendar .events .event-single p {
+    padding: 7px 10px;
+    font: bold 13px "Helvetica Neue", Arial;
+    margin: 0;
+    color: #333;
+    border-bottom: 1px solid rgba(0,0,0,0.3);
+}
+.jalendar .events .event-single p a {
+    color: #333;
+}
+
+.header{
+    padding-bottom: 1rem;
+}
+.jalendar-pages{
+   width:100%;
+}
+
+.today {
+    color:rgb(255,132,114) !important;
+}
+
+.wow .data-title {
+     display:block;
+}

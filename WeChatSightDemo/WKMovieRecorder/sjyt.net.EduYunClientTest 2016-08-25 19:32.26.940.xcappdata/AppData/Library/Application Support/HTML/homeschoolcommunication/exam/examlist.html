@@ -1,0 +1,567 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>考试列表</title>
+    <link href="../../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../../js/jquery-1.10.2.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script>
+        var uid = request('uid');
+        var uidChild = request("uid_child");
+        var userType = request('user_type');
+        var schoolId = request('school_id');
+        var classId = request('class_id');
+        var index = 1;
+        var size = 10;
+        var count = 0;
+        var firstLoad = true;
+        var currentChild = 0;
+        var is_click_show = 0;
+        $(function () {
+            if (type == "1" || type == "0") {
+                $("#back").hide();
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    bridge.registerHandler("onClickBack", function (data, responseCallback) {
+
+                        if (is_click_show == 1) {
+                            //搜索过后点击返回，应该回到初始页面
+                            is_click_show = 0;
+                            $('#txt_search').val("");
+                            search();
+                        }
+                        else {
+                            var array = {
+                                title: null,
+                                url: null,
+                                urlType: 0,
+                                close: true,
+                                children: []
+                            }
+                            responseCallback(array);
+                        }
+                    });
+                }, false);
+            }
+            if (request("has_class") != "1") {
+                $("body").html("<div class='nodata nohomework'>您还没有班级哦！</div>");
+                return;
+            }
+            if (userType == 1) {
+                $.ajax({
+                    type: 'get',
+                    url: domain + 'api/HSCForImageURL/GetGenearchList',
+                    async: false,
+                    data: {
+                        uid: uid,
+                        classid: classId
+                    },
+                    dataType: 'json',
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    },
+                    success: function (json) {
+                        var html = '';
+                        if (json.total > 0) {
+                            $.each(json.rows, function (i, n) {
+                                if (i == 0) {
+                                    currentChild = n.uid_child == 0 ? n.uid : n.uid_child;
+                                }
+                                html += '<div class="fleft choosechild mlonerem ' + (i == 0 ? 'headcurrent' : '') + '" uid_child="' + (n.uid_child == 0 ? n.uid : n.uid_child) + '">';
+                                html += '<div class="relative">'
+                                if (strIsNullOrEmpty(n.u_img)) {
+
+                                    html += '<img class="userhead relative" src="../../images/default-avatar.png" />';
+
+                                }
+                                else {
+                                    html += '<img class="userhead relative"  onerror="onerror=null;src=\'../../images/default-avatar.png\'" src="' + n.u_img + '" />';
+                                }
+
+                                html += '<div class="childname nowrap" >';
+
+                                html += '<a href="javascript:void(0);" >' + (n.uid_child == 0 ? n.real_name : n.real_name_child) + '</a>';
+                                html += '</div>';
+                                html += '</div>'
+                                html += '</div>'
+                            });
+                        }
+                        html += '<div class="clear"></div>';
+                        $('#children').html(html);
+                        if (json.total > 1) {
+                            $('#children').show();
+                        }
+                    }
+                });
+                $('#children .choosechild').click(function () {
+                    $('#children .choosechild').removeClass('headcurrent');
+                    $(this).addClass('headcurrent');
+                    currentChild = $(this).attr('uid_child');
+                    index = 1;
+                    count = 0;
+                    firstLoad = true;
+                    console.log(22)
+                    $('#examList').empty().append('<div class="loading">加载中...</div>');
+                    bindExamPager();
+                });
+            }
+            bindExamPager();
+            var height = $(window).height();
+            var tabHeight = $('.tabdiv').height();
+            $('.loadmore').css({
+                'min-height': height - tabHeight + 5,
+            });
+        });
+
+        function search() {
+            if (!strIsNullOrEmpty($.trim($('#txt_search').val()))) {
+                is_click_show = 1;
+            }
+            index = 1;
+            count = 0;
+            firstLoad = true;
+            bindExamPager();
+            $('#examList').empty().append('<div class="loading">加载中...</div>');
+            //$('#searchdiv').addClass('hide');
+        }
+        function bindExamPager() {
+            var examName = $.trim($('#txt_search').val());
+            var starTime = '';
+            var endTime = '';
+
+            if (firstLoad || (index - 1) * size < count) {
+                $.get(domain + 'api/HomeSchoolCommunication/GetExamPager', {
+                    examName: examName,
+                    //starTime: starTime,
+                    //endTime: endTime,
+                    uid: uid,
+                    uidChild: currentChild,
+                    schoolId: schoolId,
+                    classId: classId,
+                    userType: userType,
+                    index: index,
+                    size: size
+                }, function (json) {
+                    var html = '';
+                    count = json.total;
+                    $('#examList .loading').remove();
+                    if (firstLoad && json.total == 0) {
+                        html = '<div class="nodata nohomework">哦吼！还没有考试数据哦 </div>';
+                        $('.block').removeClass('bgblock');
+                    } else if (json.total > 0) {
+                        $.each(json.rows, function (i, n) {
+                            if (userType == 0 && !n.result_published) {
+                                html += '<li  data-title="0" onclick="showExButton(this)" is_readed="' + n.is_readed + '" exam_id="' + n.id + '">'
+                            } else {
+                                html += '<li  data-title="0" onclick="showExamResult(' + n.id + ')" is_readed="' + n.is_readed + '" exam_id="' + n.id + '">';
+                            }
+                            html += '<div class="widper100 wb patb bb1">'
+                            html += '<div class="wb widper100">';
+                            html += '<div class="tcenter mlper3 widper16">';
+                            if ((n.is_readed == 1 && userType == 1) || (userType == 0 && n.result_published)) {
+                                //家长已读，老师已发布
+                                html += '<img class="noticeitem" src="../../images/read_notice.png">'
+                                html += '</div>'
+                                html += '<div class="widper50 g-font mlper3  ">'
+                            } else {
+                                html += '<img class="noticeitem " src="../../images/exzamicon.png">'
+                                html += '</div>'
+                                html += '<div class="widper50 mlper3  ">'
+                            }
+
+                            html += '<div class="oneline  nowrap">' + n.name + '</div>';
+                            html += '</div>';
+                            html += '<div class="mlper3 widper25">';
+
+                            var date = new Date();
+                            var today = date.getFullYear() + '-' + padLeft((parseInt(date.getMonth()) + 1), 2) + '-' + padLeft(date.getDate(), 2);
+                            if (convertDateToString(parseISO8601(n.exam_start)) == today) {
+                                //html += "<div class='p15 oneline g-font'>" + convertTimeToString(parseISO8601(n.exam_start)) + "</div>";
+                                html += "<div class='p15 oneline g-font'>刚刚</div>";
+                            }
+                            else if (convertYearToString(parseISO8601(n.exam_start)) == date.getFullYear().toString()) {
+                                html += "<div class='p15 oneline g-font'>" + convertMothDayToString(parseISO8601(n.exam_start)) + "</div>";
+                            }
+                            else {
+                                html += "<div class='p15 oneline g-font'>" + convertDateToString(parseISO8601(n.exam_start)) + "</div>";
+                            }
+                            //html += '<div class="p15 oneline g-font">' + convertDateToString(parseISO8601(n.exam_start)) + '</div>';
+                            html += '</div>'
+                            html += '</div>'
+                            html += '</div>'
+                            if (!n.result_published && userType == 0) {
+                                //录入成绩、发布成绩
+                                html += '<div class="widper100 wb btby1 mt-2 bgwhite hide ex-button">'
+                                if (n.create_uid == uid) {
+                                    html += '<div class="tcenter widper50 y-font patbb bryellow" onclick="updateExamStatus(' + n.id + ', \'' + n.class_ids + '\'); event.stopPropagation();">发布成绩</div>';
+                                    html += '<div class="widper50  tcenter y-font patbb" onclick="addExamResult(' + n.id + ', \'' + n.class_ids + '\', \'' + n.name + '\'); event.stopPropagation();">录入成绩</div>';
+                                } else {
+
+                                    html += '<div class="widper100  tcenter y-font patbb" onclick="addExamResult(' + n.id + ', \'' + n.class_ids + '\', \'' + n.name + '\'); event.stopPropagation();">录入成绩</div>';
+                                }
+                                html += '</div>'
+                            }
+
+                            html += '</li>';
+                        });
+                    }
+                    $('#examList').append(html);
+                    firstLoad = false;
+                    index++;
+                }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                });
+            }
+        }
+
+        function updateExamStatus(exam_id, class_ids) {
+            var str = "成绩发布后不可修改，确认发布？";
+            if (!strIsNullOrEmpty(class_ids) && class_ids.split(',').length > 1) {
+                str = "请确保所有班级成绩已录入完毕，一旦发布则不可修改，确认发布？";
+            }
+            dialogbox(str, function () {
+                $.ajax({
+                    url: domain + 'api/Educationalcenter/ExamMobileResultPublishedEdit',
+                    type: "get",
+                    async: true,
+                    data: {
+                        uid: uid,
+                        userType: userType,
+                        school_id: schoolId,
+                        result_published: true,
+                        exam_id: exam_id
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    },
+                    success: function (json) {
+                        if (json.operationStatus == 1) {
+                            error('发布成功');
+                            var elExam = $('#examList li[exam_id=' + exam_id + ']');
+                            elExam.addClass('g-font');
+                            elExam.find('.ex-button').remove();
+                            elExam.removeClass('bggray');
+                            elExam.find('img.noticeitem').attr('src', '../../images/read_notice.png');
+                            elExam.unbind('click').bind('click', function () { showExamResult(exam_id); });
+                        } else {
+
+                        }
+                    }
+                });
+            });
+
+            //error('发布成绩');
+        }
+
+        function addExamResult(exam_id, class_ids, exam_name) {
+            var paramArray;
+            if (!strIsNullOrEmpty(class_ids) && class_ids.split(',').length > 1) {
+                paramArray =
+                {
+                    title: exam_name,
+                    url: '/HomeSchoolCommunication/exam/examclass.html?uid=' + uid + '&user_type=0&school_id=' + schoolId + '&class_id=' + classId + "&exam_id=" + exam_id,
+                    urlType: 1,
+                    close: false,
+                    //isShut: true,
+                    children: []
+                };
+                appRedirect(paramArray);
+                //error('多个班级先去选择班级列表');
+
+            } else {
+                paramArray =
+                    {
+                        title: exam_name,
+                        url: '/HomeSchoolCommunication/exam/examresultadd.html?uid=' + uid + '&user_type=0&schoolId=' + schoolId + '&classId=' + class_ids + "&examId=" + exam_id,
+                        urlType: 1,
+                        close: false,
+                        //isShut: true,
+                        children: [
+                        {
+                            title: '保存',
+                            url: 'ExamResultAdd()',
+                            urlType: 2
+                        }]
+                    };
+                appRedirect(paramArray);
+                //error('单个班级录入成绩');
+            }
+
+        }
+
+        function showExamResult(examid) {
+            var paramArray;
+            if (userType == 1) {
+                var isReaded = $('#examList li[exam_id=' + examid + ']').attr('is_readed');
+                if (isReaded == 1) {
+                    paramArray =
+                    {
+                        title: '学生成绩分析',
+                        url: '/HomeSchoolCommunication/exam/studentanalyze.html?uid=' + uid + '&user_type=1&class_id=' + classId + '&uid_child=' + currentChild + '&exam_id=' + examid + '&sel_class_id=' + classId,
+                        urlType: 1,
+                        close: false,
+                        children: []
+                    };
+                    appRedirect(paramArray);
+
+                } else {
+                    if (type == "1") {
+                        bridge.callHandler("isHidden", {}, function (data) {
+                            var isHidden = data.isHidden;
+                            if (isHidden) {
+                                Unremind(examid);
+                            }
+                            else {
+                                ShowForUser(examid);
+                            }
+                        });
+                    }
+                    else {
+                        ShowForUser(examid);
+                    }
+
+
+                }
+            } else if (userType == 0) {
+                paramArray =
+                {
+                    title: '成绩统计',
+                    url: '/HomeSchoolCommunication/exam/resultstatistics.html?uid=' + uid + '&user_type=0&school_id=' + schoolId + '&class_id=' + classId + "&exam_id=" + examid,
+                    urlType: 1,
+                    close: false,
+                    children: []
+                };
+                appRedirect(paramArray);
+            }
+        }
+        function ShowForUser(examid) {
+            //判断是否有积分
+            $.get(domain + 'api/HomeSchoolCommunication/MessageShowForUser', {
+                is_now: null,
+                uid: uid,
+                uid_child: currentChild,
+                class_id: classId,
+                id: examid,
+                message_type_id: getMesTypeId("成绩")
+            }, function (json) {
+                var result = json.res;
+                console.log(result)
+                if (result == "0") { //积分充足情况下
+                    var res_user_pay_type = json.res_user_pay_type;
+                    if (res_user_pay_type == "2") {
+                        var res_pay_score = json.res_pay_score;
+                        var is_remind = 1;
+                        if (type == "1" || type == "0") {
+                            bridge.callHandler("getScoreReminder", { module: 4 }, function (data) {
+                                if (type == "0") {
+                                    data = JSON.parse(data);
+                                }
+                                is_remind = data.is_remind;
+                                if (is_remind == 0) {
+                                    Unremind(examid);
+                                }
+                                else {
+                                    Remind(res_pay_score, examid);
+                                }
+                            });
+                        } else {
+                            Remind(res_pay_score, examid);
+                        }
+                        //else if (type == "0" && 'surfaceView' in window) {
+                        //    is_remind = surfaceView.getScoreReminder(4);
+                        //    if (is_remind == 0) {
+                        //        Unremind(examid);
+                        //    }
+                        //    else {
+                        //        Remind(res_pay_score, examid);
+                        //    }
+                        //}
+
+
+                    } else {
+                        Unremind(examid);
+
+                    }
+                }
+                else if (result == "2") {
+                    choicetwo("积分不足，无法查阅！", "取消", function () { $('.overlay').hide(); }, "查看服务", function () {
+                        var array = {
+                            title: '班级服务',
+                            url: '/customer/classservice.html?uid=' + uid + "&classid=" + classId,
+                            urlType: 1,
+                            close: false,
+                            children: []
+                        };
+                        appRedirect(array);
+                    });
+                }
+                else if (result == "3") {
+                    choicetwo("您没有购买班级包月服务，无法查阅！", "取消", function () { $('.overlay').hide(); }, "查看服务", function () {
+                        var array = {
+                            title: '班级服务',
+                            url: '/customer/classservice.html?uid=' + uid + "&classid=" + classId,
+                            urlType: 1,
+                            close: false,
+                            children: []
+                        };
+                        appRedirect(array);
+                    });
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        $(window).scroll(function () {
+            var scrollTop = $(this).scrollTop();
+            var scrollHeight = $(document).height();
+            var windowHeight = $(this).height();
+            if (scrollTop + windowHeight == scrollHeight) {
+                setTimeout(function () {
+                    bindExamPager();
+                }, 400);
+            }
+        })
+
+
+        function Remind(res_pay_score, examid) {
+            if (res_pay_score > 0) {
+                dialogbox("<div>查看详情需要扣除您" + res_pay_score + "积分，确认查看？</div><label class='relative label mt10' onclick='ischeck(this,true)'><input class='ckbox ckboxout' type=\"checkbox\" id=\"remind\" /><span class='mlonerem g-font'>不再提示</span></label>", function () {
+
+                    if (isChecked($("#remind"))) {
+                        if (type == "1" || type == "0") {
+                            bridge.callHandler("setScoreReminder", { module: 4, is_remind: 0 });
+                        }
+                        //else if (type == "0" && 'surfaceView' in window) {
+                        //    surfaceView.setScoreReminder(JSON.stringify({ module: 4, is_remind: 0 }));
+                        //}
+                    }
+
+                    //扣除积分
+                    $.get(domain + 'api/Mall/UserVirtualCurrencyCut', {
+                        uid: uid,
+                        uid_child: currentChild,
+                        class_id: classId,
+                        expend_ideal_money: (res_pay_score * -1),
+                        remark: "班级服务 → 积分服务",
+                        change_type_id: getMesTypeId("成绩"),
+                        original_id: examid,
+                        remark_additional: "查看成绩"
+                    }, function (json) {
+
+                        Unremind(examid);
+                    }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    });
+                });
+            }
+            else {
+                Unremind(examid);
+            }
+        }
+
+        function Unremind(examid) {
+            //修改为已读
+            $.post(domain + 'api/HomeSchoolCommunication/AddReadLog', {
+                original_id: examid,
+                class_id: classId,
+                uid: uid,
+                uid_child: currentChild,
+                user_type: userType,
+                type: 2
+            }, function (json) {
+                $("[exam_id=" + examid + "]").addClass("g-font");
+                $("[exam_id=" + examid + "]").find(".noticeitem ").attr("src", "../../images/read_notice.png");
+                //查看成绩
+                paramArray =
+                {
+                    title: '学生成绩分析',
+                    url: '/HomeSchoolCommunication/exam/studentanalyze.html?uid=' + uid + '&user_type=1&class_id=' + classId + '&uid_child=' + currentChild + '&exam_id=' + examid + '&sel_class_id=' + classId,
+                    urlType: 1,
+                    close: false,
+                    children: []
+                };
+                appRedirect(paramArray);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function showSearch() {
+            $('#searchdiv').removeClass('hide');
+        }
+
+        function onClickBack() {
+            if (is_click_show == 1) {
+                //搜索过后点击返回，应该回到初始页面
+                is_click_show = 0;
+                $('#txt_search').val("");
+                search();
+            }
+            else {
+                if (strIsNullOrEmpty(type)) {
+                    error("该返回了");
+                }
+                else {
+                    var array = {
+                        title: '',
+                        url: '',
+                        urlType: 1,
+                        close: true,
+                        shutAll: true,
+                        children: []
+                    };
+                    appRedirect(array);
+                }
+            }
+        }
+
+        //展开或收起button
+        function showExButton(a) {          
+            var $this = $(a);
+            var mt = $this.offset().top;
+            var hei_ = $(window).height();
+            
+            if ($this.attr('data-title') == 0) {
+                $('#examList li').removeClass('bggray').attr('data-title', '0');
+                $('#examList li .ex-button').addClass('hide');
+                $this.addClass('bggray').attr('data-title', '1');
+                $this.find('.ex-button').removeClass('hide');
+                if (hei_ - mt < 30) {
+                    $('body').scrollTop(mt - hei_ + 120);
+                }
+            } else {
+                $this.find('.ex-button').addClass('hide');
+                $this.removeClass('bggray');
+                $this.attr('data-title', '0');
+            }
+
+            //$this.find('.ex-button').toggle(function () { }, function () {  });
+        }
+    </script>
+</head>
+<body>
+    <input type="button" value=" 返 回 " onclick="onClickBack()" id="back" />
+    <div id="searchdiv" class="searchdiv wb ">
+        <div class="widper80">
+            <input id="txt_search" class="bgiconitem last indentb" placeholder="输入考试名称进行查找" maxlength="30" type="text" />
+        </div>
+        <div class="widper20 tright">
+            <input type="button" id="btn_search" class="searbtn" onclick="search()" />
+        </div>
+    </div>
+    <div id="children" class="mtonerem" style="display: none;">
+
+    </div>
+
+    <div class="bgblock block  ">
+        <ul id="examList" class="loadmore">
+            <div class="loading">加载中...</div>
+        </ul>
+    </div>
+</body>
+</html>

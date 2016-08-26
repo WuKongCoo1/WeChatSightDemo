@@ -1,0 +1,706 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>赠送礼物</title>
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <link href="../css/swiper.min.css" rel="stylesheet" />
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script type="text/javascript">
+        var product_id = request('product_id');
+        var receive_uids = request('receive_uids');
+        var receive_names = request('receive_names');
+        var from_type = request('from_type');
+        var original_id = request('original_id');
+        var uid = request('uid');
+        $(document).ready(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                    bridge.registerHandler("setReceiveUser", function (data) { setReceiveUser(data); });
+                }, false);
+
+                $(document).on('click', '.detail img', function () {
+                    var imageUrls = [];
+                    $(".detail img").each(function (i, n) {
+                        imageUrls.push($(this).attr('src'));
+                    });
+                    var json = {
+                        index: $(".detail img").index($(this)),
+                        url: imageUrls
+                    }
+                    bridge.callHandler("showPicsDetail", json);
+                });
+            }
+            bind();
+            $(".reduce").click(function () {
+                var quantity = $("#txtcount").val();
+                $("#txtcount").val(parseInt(quantity) - 1);
+                changeprice();
+
+            });
+
+            $(".add").click(function () {
+                var quantity = $("#txtcount").val();
+                $("#txtcount").val(parseInt(quantity) + 1);
+                changeprice();
+
+            });
+        });
+        function bind() {
+            //if (request('from_type') == 255) {
+            //    setReceiveUser(decodeURI(request('sel_contacts')));
+            //}
+            var post_url = domain + "api/mall/GetProductDetailNew";
+            $.ajax({
+                url: post_url,
+                data: {
+                    product_id: product_id,
+                    uid: uid
+                },
+                async: false,
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (data) {
+                    var html = '';
+                    var obj = data.rows;
+                    var paymoney = 0;
+                    var payscore = 0;
+                    var paytype = "";
+                    //新增
+                    var $receive_names = $('#receive_names');
+                    html += '<div class="widper100 ">'
+                    html += '<div id="productimgs" class="biggiftimg">';
+
+                    $("#pdes").append(html);
+                    html = "";
+                    if (obj.product_spec != null && obj.product_spec != "") {
+                        html = pspec(obj.product_spec, obj.product_img);
+                    }
+                    else {
+                        loaddefaultmg([], obj.product_img);
+                    }
+                    html += '<div class="bgblock patb">';
+                    html += '<div class="wb adritem mlper3">'
+                    html += '<div class="widper50  bold nowrap">' + obj.name + '</div>';
+                    html += '<div class="widper50 tcenter ">';
+                    if (!strIsNullOrEmpty(obj.price_type) && obj.price_type.indexOf("1") != -1) {
+                        html += '<span class="y-font bold"> ' + obj.discount_score + '积分  </span>';
+                    } else {
+                        html += '<span class="y-font bold ">￥' + obj.product_price + '</span>';
+                    }
+
+                    if (!strIsNullOrEmpty(obj.get_closeness) && obj.get_closeness > 0) {
+                        html += '<span class=" y-font bold"> ＋' + obj.get_closeness + '亲密度 </span>';
+                    }
+
+                    html += '</div> </div>';
+                    if (obj.product_attr == 2 && !strIsNullOrEmpty(obj.detail)) {
+                        html += '<div class="mtonerem palr">产品详情';
+                        html += '<div class="g-font c-line detail ">' + obj.detail + '</div></div>';
+                    }
+                    paymoney = obj.product_price;
+                    payscore = obj.discount_score;
+                    $("#hidpaytype").val('1');
+                    $("#hidis_instalment").val(obj.is_instalment);
+                    $("#hidinstalmentcount").val(obj.instalment_count);
+                    $("#hidprice").val(paymoney);
+                    $("#hidscore").val(payscore);
+                    $("#hidpricetype").val(obj.price_type);
+                    $("#hidproductattr").val(obj.product_attr);
+                    if (receive_uids && receive_uids != "") {
+                        $("#hidreceiveuids").val(receive_uids);
+                    }
+
+                    var names = '';
+                    //可以选赠送人
+                    //var isflag = true;
+                    //if (!strIsNullOrEmpty(from_type) && !strIsNullOrEmpty(original_id)) {
+                    //    isflag = false;
+                    //}
+                    if (!strIsNullOrEmpty(receive_names)) {
+                        names = addname();
+                    }
+
+                    if (obj.product_attr != 7 && obj.product_attr != 8) {
+                        html += '<div class="bgitem mlper3 oneline wb">'
+                        html += '<div class="widper40">购买数量</div>';
+                        html += '<div class="widper60 tright relative">'
+                        html += '<div class="minus reduce">-</div>'
+                        html += '<input type="number" id="txtcount" oninput="changeprice()" value="1" class="mrthreerem buycount" />';
+                        html += '<div class="plus add">+</div>'
+                        html += '</div></div>';
+                    }
+
+
+                    // if (isflag) {
+                    html += '<div class="adritem mlper3 patb"><div class=" wb widper100">'
+                    html += '<div class="widper50">赠送给：</div>';
+                    html += '<div class="widper47 tright"><a href="#" class=" p14 radius10 btnwhite  patblr tcenter  "  onclick="selectReceiveUser()">添加赠送人</a>';
+                    html += '</div>'
+                    html += '</div>'
+                    html += '<div id="remind" class="p14 g-font c-line">若选择多个接收人，则每人都会获得所选购买数量的礼物</div>';
+                    html += '<div id="receive_names"  class="y-font mt2  line-clamp receive-relative">' + names + '</div>';
+                    html += '</div>';
+                    //}
+                    //else {
+                    //    html += '<div class="adritem mlper3">'
+                    //    html += '赠送给：<div id="receive_names" class="y-font">' + names + '</div>';
+                    //    html += '</div>';
+                    //}
+
+                    html += '<div class="dritem mlper3">';
+                    html += '<textarea id="txtremark" class="bgtextarea  pat last" placeholder="亲，送你一个（' + obj.name + '），祝你每天都开开心心！" ></textarea> ';
+                    html += '<div class="bottom wb">';
+                    html += '<div class="widper70 tcenter y-font p26">';
+                    if (!strIsNullOrEmpty(obj.price_type) && obj.price_type.indexOf("1") != -1) {
+                        html += '应支付:<span id="paymoney">' + payscore + '</span> ';
+                        html += '积分</div>'
+                        $("#hidpaytype").val('4');
+                    }
+                    else {
+                        html += '应支付:<span id="paymoney">' + paymoney + '</span> ';
+                        html += '元</div>'
+                        $("#hidpaytype").val('1');
+                    }
+
+                    html += '<div class="widper30"> <div id="btnok" class="btnblock widper100 w-font tcenter"  >确认支付</div></div>';
+                    html += '</div>';
+                    html += '</div>';
+                    $("#pdes").append(html);
+                    $('#btnok').bind('click', createorder);
+                    bindpspec();
+                    changeprice();
+                    if (!strIsNullOrEmpty(receive_uids) && receive_uids.split(',').length > 1) {
+                        $("#remind").removeClass('hide');
+                    }
+                    else {
+                        $("#remind").addClass('hide');
+                    }
+
+                    //接收礼物的人 2行 不显示 展开按钮 2016-4-13 zlx
+                    if (names && $('#receive_names').height() > 74) {
+                        $('#receive_names').append('<span class="receive-more" onclick="panelaShowOrhide(this)"></span>');
+                    }
+                    $(".loading").hide();
+
+                }
+            });
+        }
+
+        //数量改变
+        function changeprice() {
+            var quantity = $("#txtcount").val();
+            var price = $("#hidprice").val();
+            var score = $("#hidscore").val();
+            var receives = $("#hidreceiveuids").val().split(',').length;
+            var price_type = $("#hidpricetype").val();
+            if (!strIsNullOrEmpty(quantity)) {
+                if (!isInt(quantity) || parseInt(quantity) <= 0 || parseInt(quantity) > 100) {
+                    //  error("请输入正确的数量");
+                    if (quantity > 100) {
+                        $("#txtcount").val('100');
+                        quantity = 100;
+                    }
+                    else {
+                        $("#txtcount").val('1');
+                        quantity = 1;
+                    }
+                }
+                if (price_type.indexOf("1") != -1) {
+                    var payprice = (parseInt(score) * parseInt(quantity) * receives);
+                    $("#paymoney").text(payprice);
+                }
+                else {
+                    var payprice = (parseFloat(price) * parseInt(quantity) * receives).toFixed(2);
+                    $("#paymoney").text(payprice);
+                }
+
+            }
+            else {
+                if (price_type.indexOf("1") != -1) {
+                    $("#paymoney").text(score);
+                }
+                else {
+                    $("#paymoney").text(parseFloat(price).toFixed(2));
+                }
+
+            }
+
+        }
+
+        function pspec(spec, defaultimg) {
+            //[{"id":"4","name":"23","key":"23","spec_group_id":"2","spec_group_name":"尺码","is_primary":"false","img_list":[],"img_list_thumbnail":[]},{"id":"5","name":"24","key":"24","spec_group_id":"2","spec_group_name":"尺码","is_primary":"false","img_list":[],"img_list_thumbnail":[]},{"id":"6","name":"25","key":"25","spec_group_id":"2","spec_group_name":"尺码","is_primary":"false","img_list":[],"img_list_thumbnail":[]},{"id":"14","name":"红色","key":"red","spec_group_id":"3","spec_group_name":"颜色","is_primary":"true","img_list":["1682078679.png","1293294851.png","11552313085.jpg","11345657484.png","1-1120346301.png"],"img_list_thumbnail":["thumbnail_1682078679.png","thumbnail_1293294851.png","thumbnail_11552313085.jpg","thumbnail_11345657484.png","thumbnail_1-1120346301.png"]},{"id":"15","name":"黄色","key":"yellow","spec_group_id":"3","spec_group_name":"颜色","is_primary":"true","img_list":["12111973760.png","11646451020.png","11679047153.jpg","1-428427432.png","1-1590171122.png"],"img_list_thumbnail":["thumbnail_12111973760.png","thumbnail_11646451020.png","thumbnail_11679047153.jpg","thumbnail_1-428427432.png","thumbnail_1-1590171122.png"]},{"id":"16","name":"绿色","key":"green","spec_group_id":"3","spec_group_name":"颜色","is_primary":"true","img_list":["11128280043.png","1-717730445.png","1-45844043.jpg","11849366114.png","1-298277835.png"],"img_list_thumbnail":["thumbnail_11128280043.png","thumbnail_1-717730445.png","thumbnail_1-45844043.jpg","thumbnail_11849366114.png","thumbnail_1-298277835.png"]},{"id":"17","name":"蓝色","key":"blue","spec_group_id":"3","spec_group_name":"颜色","is_primary":"true","img_list":["1-2034826191.png","1-468034623.png","1672261238.jpg","1-446055828.png","11247536776.png"],"img_list_thumbnail":["thumbnail_1-2034826191.png","thumbnail_1-468034623.png","thumbnail_1672261238.jpg","thumbnail_1-446055828.png","thumbnail_11247536776.png"]}]
+
+            var obj = JSON.parse(spec);
+            var sphtml = "";
+            var arrgroupid = new Array(obj.length);
+            var arrgroupnae = new Array(obj.length);
+            $.each(obj, function (i, n) {
+                arrgroupid[i] = n.spec_group_id;
+                arrgroupnae[i] = n.spec_group_name;
+            });
+            var arrid = unique(arrgroupid);
+            var arrname = unique(arrgroupnae);
+            var isfirstprimary = true; //是否是第一个主属性
+            sphtml += "<div class='bgwhite pal6 pabonerem'>"
+            for (var i = 0; i < arrid.length; i++) {
+                sphtml += "<div class='patb'>选择" + arrname[i] + "</div>";
+                $.each(obj, function (j, n) {
+                    if (arrid[i] == n.spec_group_id) {
+                        if (n.is_primary == "true") {
+                            sphtml += '<span class="choosespec" onclick="changeimg(this)" spec_group_id="' + n.spec_group_id + '"  imglist="' + n.img_list + '" img_list_thumbnail="' + n.img_list_thumbnail + '" spec_key="' + n.key + '" spec_id="' + n.id + '">' + n.name + '</span>';
+                            //图片显示第一个主属性
+                            if (isfirstprimary) {
+                                loaddefaultmg(n.img_list, defaultimg);
+                            }
+                            isfirstprimary = false;
+
+                        } else {
+                            sphtml += '<span class="choosespec" spec_group_id="' + n.spec_group_id + '"  spec_key="' + n.key + '" spec_id="' + n.id + '">' + n.name + '</span>';
+                        }
+                    }
+                });
+                sphtml += '<input type="hidden" class="spec" id="hidSpec_' + arrid[i] + '" alt="' + arrname[i] + '" />';
+            }
+            sphtml += "</div>";
+
+            return sphtml;
+        }
+        function loaddefaultmg(imgnames, defaultimg) {
+            var imghtml = "";
+            imghtml += '<div class="swiper-container">'
+            imghtml += '<div class="swiper-wrapper">'
+            for (var i = 0; i < imgnames.length; i++) {
+                imghtml += ' <div class="swiper-slide">'
+                imghtml += '<img  src="' + imgnames[i] + '" alt="产品图片" />';
+                imghtml += '</div>'
+            }
+            if (imgnames.length == 0) {
+                imghtml += ' <div class="swiper-slide">'
+                imghtml += '<img onerror="onerror=null;src=\'../images/default-product.png\'"  src="' + (strIsNullOrEmpty(defaultimg) ? "../images/default-product.png" : defaultimg) + '" alt="产品图片" />';
+                imghtml += '</div>'
+            }
+            imghtml += '</div>'
+            if (imgnames.length > 1) {
+                imghtml += ' <div class="swiper-pagination"></div>'
+            }
+            imghtml += '</div>'
+            $("#productimgs").html(imghtml);
+            initswip();
+
+        }
+        function changeimg(obj) {
+            var imgnames = $(obj).attr("imglist");
+            var imgthumbnailnames = $(obj).attr("img_list_thumbnail");
+
+            var imghtml = "";
+            imghtml += '<div class="swiper-container">'
+            imghtml += '<div class="swiper-wrapper">'
+            var names = imgnames.split(',');
+            if (strIsNullOrEmpty(imgnames)) {
+                imghtml += ' <div class="swiper-slide">'
+                imghtml += '<img  src="../images/default-product.png" alt="产品图片" />';
+                imghtml += '</div>'
+            }
+            else {
+                for (var i = 0; i < names.length; i++) {
+                    imghtml += ' <div class="swiper-slide">'
+                    imghtml += '<img  src="' + names[i] + '" alt="产品图片" />';
+                    imghtml += '</div>'
+                }
+            }
+            imghtml += '</div>'
+            if (names.length > 1) {
+                imghtml += ' <div class="swiper-pagination"></div>'
+            }
+            imghtml += '</div>'
+            $("#productimgs").html(imghtml);
+            initswip();
+
+        }
+        //组合规格
+        function bindpspec() {
+            $(".choosespec").click(function () {
+                var spec_group_id = $(this).attr('spec_group_id');
+                var spec_id = $(this).attr('spec_id');
+                var spec_key = $(this).attr('spec_key');
+                $("#hidSpec_" + spec_group_id).val(spec_id);
+                $('.choosespec[spec_group_id=' + spec_group_id + ']').removeClass('coloron');
+                $(this).addClass('coloron');
+            });
+        }
+
+
+        function createorder() {
+            //取消下单事件
+            $('#btnok').unbind('click', createorder);
+            var uid = request('uid');
+            var leave_message = $("#txtremark").val();
+            var quantity = $("#txtcount").val();
+            var receive_uids = $("#hidreceiveuids").val();
+            var address_id = "";
+            var epsids = "";
+            var order_pay_type_id = $("#hidpaytype").val();
+            var isinstalment = $("#hidis_instalment").val();
+            var instalmentcount = $("#hidinstalmentcount").val();
+            var product_attr = $("#hidproductattr").val();
+            var flag = true;
+            if (strIsNullOrEmpty(leave_message)) {
+                leave_message = $("#txtremark").attr('placeholder');
+            }
+            $(".spec").each(function () {
+                if ($(this).val() == "") {
+                    flag = false;
+                    error("选择" + $(this).attr("alt"));
+                    $("#btnok").bind('click', createorder);
+                    return false;
+                } else {
+                    epsids = epsids + $(this).val() + ",";
+                }
+            });
+            epsids = epsids.substr(0, epsids.length - 1);
+
+            if (flag && $("#receive_names").length != 0 && $("#hidreceiveuids").val() == "") {
+                flag = false;
+                error("请选择礼物接收人");
+            }
+            if (product_attr == 7 || product_attr == 8) {
+                quantity = 1;
+            }
+            if (flag && (!strIsNullOrEmpty(quantity) && !isInt(quantity)) || quantity == "0" || strIsNullOrEmpty(quantity)) {
+                flag = false;
+                error("请输入正确的数量");
+            }
+            if (flag) {
+                pop('正在创建订单');
+                $.ajax({
+                    url: domain + 'api/mall/CreateOrder',
+                    data: {
+                        product_id: product_id,
+                        uid: uid,
+                        leave_message: leave_message,
+                        quantity: quantity,
+                        receive_uids: receive_uids,
+                        from_type: from_type == 255 ? '' : from_type,
+                        original_id: original_id,
+                        address_id: address_id,
+                        epsids: epsids,
+                        order_pay_type_id: order_pay_type_id,
+                        class_ids: "",
+                        recharge_tel: ""
+                    },
+                    async: false,
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        $("#btnok").bind('click', createorder);
+                        clearpop();
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    },
+                    success: function (data) {
+                        clearpop();
+                        $("#btnok").bind('click', createorder);
+                        if (data.flag == "true") {
+                            var orderno = data.orderno;
+                            if (data.ispay == "false") {
+                                var isinstalment = $("#hidis_instalment").val();
+                                var instalmentcount = $("#hidinstalmentcount").val();
+                                if (isinstalment == "true") {
+                                    choicebox("我要分期付款",
+                                             function () {
+                                                 var paramArray =
+                                                 {
+                                                     title: '分期付款',
+                                                     url: '/mall/installmentpayment.html?uid=' + uid + "&orderno=" + orderno + '&instalment_count=' + instalmentcount,
+                                                     urlType: 1,
+                                                     close: false,
+                                                     isShut: true,
+                                                     children: []
+                                                 };
+                                                 appRedirect(paramArray);
+                                             }, "立即支付",
+                                         function () {
+                                             var paramArray =
+                                             {
+                                                 title: '确认支付',
+                                                 url: '/mall/confirmorder.html?uid=' + uid + "&orderno=" + orderno,
+                                                 urlType: 1,
+                                                 close: false,
+                                                 isShut: true,
+                                                 children: []
+                                             };
+                                             appRedirect(paramArray);
+                                         });
+                                } else {
+                                    var paramArray =
+                                        {
+                                            title: '确认支付',
+                                            url: '/mall/confirmorder.html?uid=' + uid + "&orderno=" + orderno,
+                                            urlType: 1,
+                                            close: false,
+                                            isShut: true,
+                                            children: []
+                                        };
+                                    appRedirect(paramArray);
+                                }
+
+                            }
+                            else {
+                                //支付成功跳转我的订单
+                                var paramArray =
+                                         {
+                                             title: '支付成功',
+                                             url: '/mall/paysuccess.html?uid=' + uid + "&ordernumber=" + orderno,
+                                             urlType: 1,
+                                             close: false,
+                                             children: []
+                                         };
+                                appRedirect(paramArray);
+                            }
+                        }
+                        else {
+                            if (data.res == -3) {
+                                choiceone("该商品已下架", "关闭", function () {
+                                    var paramArray =
+                                       {
+                                           title: '世纪商城',
+                                           url: '/mall/productlist.html?uid=' + uid,
+                                           urlType: 1,
+                                           close: true,
+                                           children: []
+                                       };
+                                    appRedirect(paramArray);
+                                });
+                            }
+                            else {
+                                error(data.msg);
+                            }
+                        }
+                    }
+                });
+
+            }
+            else {
+                $("#btnok").bind('click', createorder);
+            }
+        }
+
+        function selectReceiveUser() {
+            var uids = [];
+            var names = [];
+            if (!strIsNullOrEmpty(receive_uids)) {
+                uids = receive_uids.split(',');
+                names = receive_names.split(',');
+            }
+            var param = [];
+            $.each(uids, function (i, n) {
+                if (!strIsNullOrEmpty(n)) {
+                    param.push({ uid: n, name: names[i] });
+                }
+            });
+            if (request('from_type') == 255) {
+                var paramArray =
+                {
+                    title: '联系人',
+                    url: '/mall/contactor.html?uid=' + uid + '&product_id=' + product_id + '&sel_contacts=' + (sel_contacts ? sel_contacts : ''),
+                    urlType: 1,
+                    close: false,
+                    children: [{
+                        title: '完成',
+                        url: 'save()',
+                        urlType: 2,
+                        childTitle: ''
+                    }]
+                };
+                appRedirect(paramArray);
+            } else {
+                if (type == "0") {
+                    //surfaceView.selectContactsForJS(JSON.stringify(param));
+                    bridge.callHandler("selectContactsForJS", { param: param });
+                }
+                else if (type == "1") {
+                    bridge.send({ selectContactsForJS: param });
+                } else {
+                    var callbackurl = "/mall/givepresent.html" + window.location.search;
+                    var paramArray =
+                    {
+                        title: '选择礼物接收人',
+                        url: '/mall/contact.html?uid=' + uid + '&callbackurl=' + encodeURIComponent(callbackurl),
+                        urlType: 1,
+                        close: false,
+                        children: []
+                    };
+                    appRedirect(paramArray);
+                }
+            }
+        }
+
+        var sel_contacts;
+
+        function setH5ReceiveUser(data) {
+            if (request('from_type') == 255 && !strIsNullOrEmpty(data)) {
+                var uids = [];
+                var names = [];
+                sel_contacts = data;
+                var jsonTemp = JSON.parse(data);
+                //error(jsonTemp.sel_uids)
+                var teacher_group_ids = jsonTemp.teacher_group_ids;
+                var school_class_ids = jsonTemp.school_class_ids;
+                var my_class_ids = jsonTemp.my_class_ids;
+                var sel_uids = jsonTemp.sel_uids;
+                $.ajax({
+                    url: domain + 'api/Customer/GetUsersByGift?uid=' + uid + '&sel_uids=' + sel_uids + '&teacher_group_ids=' + teacher_group_ids + '&my_class_ids=' + my_class_ids + '&school_class_ids=' + school_class_ids,
+                    async: false,
+                    type: 'get',
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    },
+                    success: function (response) {
+                        if (response.operationStatus == 1) {
+                            //error('success:' + response.rows.length);
+                            if (response.rows != null && response.rows.length > 0) {
+                                $.each(response.rows, function (i, n) {
+                                    if (n.uid != uid) {
+                                        uids.push(n.uid);
+                                        names.push(n.name);
+                                    }
+                                });
+                                receive_uids = uids.toString();
+                                receive_names = names.toString();
+                                $('#hidreceiveuids').val(receive_uids);
+                                var tempname = addname();
+                                $('#receive_names').html(strIsNullOrEmpty(tempname) ? '' : tempname);
+                                // $('#receive_names').text(strIsNullOrEmpty(receive_names) ? '' : receive_names);
+                                // $('#receive_names').append(strIsNullOrEmpty(receive_names) ? '':'');
+                                if (uids.length > 1) {
+                                    $("#remind").removeClass('hide');
+                                }
+                                else {
+                                    $("#remind").addClass('hide');
+                                }
+                                changeprice();
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+
+        function setReceiveUser(data) {
+            var json = eval(data);
+            var uids = [];
+            var names = [];
+            if (json) {
+                $.each(data, function (i, n) {
+                    if (n.uid != uid) {
+                        uids.push(n.uid);
+                        names.push(n.name);
+                    }
+                });
+            }
+            receive_uids = uids.toString();
+            receive_names = names.toString();
+            $('#hidreceiveuids').val(receive_uids);
+            var tempname = addname();
+            $('#receive_names').html(strIsNullOrEmpty(tempname) ? '' : tempname);
+            // $('#receive_names').text(strIsNullOrEmpty(receive_names) ? '' : receive_names);
+            // $('#receive_names').append(strIsNullOrEmpty(receive_names) ? '':'');
+            if (uids.length > 1) {
+                $("#remind").removeClass('hide');
+            }
+            else {
+                $("#remind").addClass('hide');
+            }
+            changeprice();
+        }
+
+        function removeReceiveUser(obj) {
+            //   $(".receiveuser[uid=" + uid + "]").remove();
+
+            var uid = $(obj).attr('uid');
+            var uids = [];
+            var names = [];
+            receive_names = decodeURIComponent(receive_names);
+            if (!strIsNullOrEmpty(receive_uids)) {
+                uids = receive_uids.split(',');
+                names = receive_names.split(',');
+            }
+            var param = [];
+            receive_uids = "";
+            receive_names = "";
+            $.each(uids, function (i, n) {
+                if (n != uid) {
+                    receive_uids += n + ',';
+                    receive_names += names[i] + ',';;
+                }
+            });
+            if (!strIsNullOrEmpty(receive_uids)) {
+                receive_uids = receive_uids.substr(0, receive_uids.length - 1);
+            }
+            if (!strIsNullOrEmpty(receive_uids)) {
+                receive_names = receive_names.substr(0, receive_names.length - 1);
+            }
+            $('#hidreceiveuids').val(receive_uids);
+            var tempname = addname();
+            $('#receive_names').html(strIsNullOrEmpty(tempname) ? '' : tempname);
+
+            //接收礼物的人 2行 不显示 展开按钮 2016-4-13 zlx
+            if ($('#receive_names').height() > 74) {
+                $('#receive_names').append(strIsNullOrEmpty(tempname) ? '' : '<span class="receive-more" onclick="panelaShowOrhide(this)"></span>');
+            }
+            changeprice();
+        }
+
+        function addname() {
+            var names = "";
+            receive_uids = decodeURIComponent(receive_uids);
+            var uids = receive_uids.split(',');
+            names = decodeURIComponent(receive_names);
+            var tempnames = names.split(',');
+            names = "";
+            for (var i = 0; i < tempnames.length; i++) {
+                if (!strIsNullOrEmpty(tempnames[i]) && !strIsNullOrEmpty(uids[i])) {
+                    names += '<div class="inline bgyellow w-font p14  mronerem patblr radius10 mt2 parhalfrem receive-box"><span  class="receiveuser ml2" uid="' + uids[i] + '">' + tempnames[i] + '</span> <span class="receiveuser inline receive-user-del" uid="' + uids[i] + '" onclick="removeReceiveUser(this)"></span></div>'
+
+                }
+            }
+            return names;
+        }
+        /*接收礼物人面板收起/折叠 2016-4-13 zlx*/
+        function panelaShowOrhide(elem) {
+            $(elem).toggleClass('receive-more-active');
+            $('#receive_names').toggleClass('line-clamp-inherit');
+        }
+        /* 2016-4-13*/
+    </script>
+
+</head>
+<body class="pabthreerem ">
+    <div id="pdes" class="bgwhite"><div class="loading">加载中...</div></div>
+    <input type="hidden" id="hidprice" />
+    <input type="hidden" id="hidscore" />
+    <input type="hidden" id="hidpricetype" />
+    <input type="hidden" id="hidpaytype" value="0" />
+    <input type="hidden" id="hidreceiveuids" value="" />
+    <input type="hidden" id="hidis_instalment" />
+    <input type="hidden" id="hidinstalmentcount" />
+    <input type="hidden" id="hidproductattr" />
+
+    <script src="../js/swiper.min.js"></script>
+    <script>
+        function initswip() {
+            var swiper = new Swiper('.swiper-container', {
+                pagination: '.swiper-pagination',
+                paginationClickable: true,
+
+            });
+        }
+
+    </script>
+</body>
+</html>

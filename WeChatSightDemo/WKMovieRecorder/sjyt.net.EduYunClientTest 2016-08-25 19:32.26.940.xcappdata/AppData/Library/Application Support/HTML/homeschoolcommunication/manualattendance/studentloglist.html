@@ -1,0 +1,588 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title></title>
+    <link href="../../css/commom.css" rel="stylesheet" />
+    <script src="../../js/jquery-1.6.1.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script>
+        var uid = request('uid');
+        var userType = request('user_type');
+        var schoolId = request('school_id');
+        var classId = request('class_id');
+        var roomId = request('room_id');
+        var attDate = request('date');
+        var childName = decodeURIComponent(request("childname"));
+        var report_id = request("report_id");
+        var uid_gen = request("uid_gen");
+        var att_id = request("att_id");
+
+        var uidChild = request('uid_child');
+        $(function () {
+
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+
+
+            $("#admins").addClass('hide');
+            $("#teachers").addClass('hide');
+
+            if (strIsNullOrEmpty(attDate)) {
+                attDate = convertDateToString(new Date());
+            }
+            $('#txt_att_date').val(attDate);
+
+            //$('#txt_att_date').scroller({
+            //    onSelect: function () {
+            //        bindAttendanceLog();
+            //    }
+            //});
+
+            //var wheels = [];
+            //wheels[0] = { 'Hours': {} };
+            //wheels[1] = { 'Minutes': {} };
+            //for (var i = 0; i < 60; i++) {
+            //    if (i < 16) wheels[0]['Hours'][i] = (i < 10) ? ('0' + i) : i;
+            //    wheels[1]['Minutes'][i] = (i < 10) ? ('0' + i) : i;
+            //}
+
+            if (userType == 1) {
+                //家长
+                $.ajax({
+                    type: 'get',
+                    url: domain + 'api/HSCForImageURL/GetGenearchList',
+                    async: false,
+                    data: {
+                        uid: uid,
+                        classid: classId
+                    },
+                    dataType: 'json',
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    },
+                    success: function (json) {
+                        var html = '';
+                        if (json.total > 0) {
+                            $.each(json.rows, function (i, n) {
+                                if (i == 0) {
+                                    uidChild = n.uid_child;
+                                    childName = n.real_name_child;
+                                }
+                                html += '<li class=" fleft choosechild mlonerem ' + (i == 0 ? 'headcurrent' : '') + '" uid_child="' + n.uid_child + '" child_name="' + n.real_name_child + '" onclick="ContactTeacher()">';
+                                html += '<div class="relative">'
+                                if (strIsNullOrEmpty(n.u_img)) {
+
+                                    html += '<img class="userhead relative" src="../../images/default-avatar.png" />';
+                                }
+                                else {
+                                    html += '<img class="userhead relative" onerror="onerror=null;src=\'../../images/default-avatar.png\'"  src="' + n.u_img + '" />';
+                                }
+                                html += '<div class="childname nowrap">'
+                                html += '<a href="javascript:void(0);" >' + n.real_name_child + '</a>';
+                                html += '</div>'
+                                html += '</div>';
+                                html += '</li>';
+                            });
+                        }
+                        $('#children ul').html(html);
+
+                        if (json.total > 1) {
+                            $('#children').show();
+                        }
+                        if (json.total == 1) {
+                            var paramArray = {
+                                title: childName,
+                                children: []
+                            }
+                            resetTitle(paramArray);
+                        }
+                    }
+                });
+                bindAttendanceLog();
+                $('#children li').click(function () {
+                    $('#children li').removeClass('headcurrent');
+                    $(this).addClass('headcurrent');
+                    uidChild = $(this).attr('uid_child');
+                    childName = $(this).attr('child_name');
+                    bindAttendanceLog();
+
+                    var paramArray = {
+                        title: childName,
+                        children: []
+                    }
+                    resetTitle(paramArray);
+                });
+
+                var menus = '<button onclick="talk()" class="btn btnbig btnnormal ">发起会话</button>' +
+                '<div class="line"></div>' +
+                '<button onclick="send_mes()" class="btn btnbig btnnormal  ">发短信</button>' +
+                '<button onclick="tel()" class="btn btnbig btnnormal  ">打电话</button>';
+                $("#menus").html(menus);
+            } else {
+                var menus = '<button onclick="push()" class="btn btnbig btnnormal ">push提醒</button>' +
+                '<div class="line"></div>' +
+                '<button onclick="sendMes()" class="btn btnbig btnnormal  ">发短信</button>' +
+                '<button onclick="tel()" class="btn btnbig btnnormal  ">打电话</button>';
+                $("#menus").html(menus);
+                //老师
+                bindAttendanceLog();
+            }
+        });
+
+        var tel_current = "";
+        var context_current = "";   //老师身份使用
+        var uid_current = 0;
+        var name_current = "";    //家长身份使用
+        var is_class_admin = 0;
+        var class_name = "";
+        var is_friend = 0;
+        var classId_current = 0;
+        var showType = 0;   //0:不显示菜单    1：显示三个按钮    2：显示两个按钮
+        //绑定考勤记录
+        function bindAttendanceLog() {
+
+            var date = $('#txt_att_date').val();
+            $.get(domain + 'api/HomeSchoolCommunication/GetManualAttendanceSearch', {
+                uid: uid,
+                class_id: classId,
+                school_id: schoolId,
+                user_type: userType,
+                uid_child: uidChild,
+                manual_attendance_id: null,
+                room_id: null,
+                check_attendance_time: date
+            }, function (json) {
+                var html = '';
+                if (!strIsNullOrEmpty(json.rows) && json.rows.Table.length > 0) {
+                    //$('.loadmore').addClass('bgblock');
+                    var cn = "";
+                    $.each(json.rows.Table, function (i, n) {
+                        if (userType == "0" && n.id == att_id) {
+                            cn = "bggray";
+                            tel_current = n.tel;
+                            context_current = "尊敬的家长，您的孩子" + childName + "在" + n.check_attendance_time + "的" + n.manual_attendance_name + "中，处于" + getManualAttendanceResult(parseInt(n.attendance_result, 10)) + "状态！";
+                            uid_current = n.genearch_uid;
+                            is_class_admin = n.is_class_admin;
+                            class_name = n.class_name;
+                            is_friend = n.is_friend;
+                            classId_current = n.class_id;
+                            if (strIsNullOrEmpty(uid_gen)) {
+                                uid_gen = n.genearch_uid;
+                            }
+                        }
+                        else {
+                            cn = "";
+                        }
+
+                        if (showType < 2 && n.has_class_role == 1 && n.is_class_admin == 1) {
+                            showType = 2;
+                        }
+                        else if (showType < 1 && n.has_class_role == 1) {
+                            showType = 1;
+                        }
+
+                        if (json.rows.Table.length - i == 1) {
+                            if (userType == "0") {
+                                html += '<li class="logitem ' + cn + '" onclick="SetInfoTeacher(this,\'' + n.tel + "\',\'" + n.check_attendance_time + '\',\'' + n.manual_attendance_name + '\',\'' + n.attendance_result + '\',' + n.genearch_uid + ',' + n.is_class_admin + ',\'' + n.class_name + '\',' + n.is_friend + ',' + n.class_id + ',' + n.has_class_role + ')">';
+                            }
+                            else {
+                                html += '<li class="logitem " onclick="SetInfo(\'' + n.tel + "\'," + n.create_uid + ',\'' + n.creator_name + '\',\'' + n.class_name + '\',' + n.is_friend + ',' + n.class_id + ')">';
+                            }
+                        } else {
+                            if (userType == "0") {
+                                html += '<li class="logitem ' + cn + '" onclick="SetInfoTeacher(this,\'' + n.tel + "\',\'" + n.check_attendance_time + '\',\'' + n.manual_attendance_name + '\',\'' + n.attendance_result + '\',' + n.genearch_uid + ',' + n.is_class_admin + ',\'' + n.class_name + '\',' + n.is_friend + ',' + n.class_id + ',' + n.has_class_role + ')">';
+                            }
+                            else {
+                                html += '<li class="logitem" onclick="SetInfo(\'' + n.tel + "\'," + n.create_uid + ',\'' + n.creator_name + '\',\'' + n.class_name + '\',' + n.is_friend + ',' + n.class_id + ')">';
+
+
+                            }
+                        }
+                        html += '<div class="bb1 wb patb ">'
+                        html += '<div class="tcenter"><img class="icon mt0" src="../../images/timeicon.png"></div>'
+                        html += '<div class="attendance_name c-line widper66 mlper6 mt2">' + n.manual_attendance_name + '</div>';
+                        html += '<div class="widper20 tcenter c-line mlper3 mt2"><span class="attendance_result y-font p15">' + getManualAttendanceResult(parseInt(n.attendance_result, 10)) + '</span></div>';
+                        html += '</div>'
+                        html += '<div>'
+                        html += '<div class="swing_date c-line p14 g-font mt10">考勤人：' + n.creator_name + '</div>';
+                        html += '<div class="swing_date c-line p14 g-font">考勤时间：' + (strIsNullOrEmpty(n.check_attendance_time) ? '' : n.check_attendance_time) + '</div>';
+                        html += '<div class="swing_date c-line p14 g-font">提交时间：' + (strIsNullOrEmpty(n.create_time) ? '' : n.create_time) + '</div>';
+                        html += '</div>';
+
+                        html += '</li>';
+                    });
+                } else {
+                    html += '<div class="nodata noleave">哦吼~这里什么都没有</div>';
+                }
+
+                $('#logList').html(html);
+
+                if (userType == "0") {
+                    if (showType == 0) {
+                        $("#admins").addClass('hide');
+                        $("#teachers").addClass('hide');
+                    }
+                    else if (showType == 1) {
+                        $("#teachers").addClass('hide');
+                        $("#admins").removeClass('hide');
+                    }
+                    else if (showType == 2) {
+                        $("#admins").addClass('hide');
+                        $("#teachers").removeClass('hide');
+                    }
+                }
+                else {
+                    $("#admins").addClass('hide');
+                    $("#teachers").addClass('hide');
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function SetInfoTeacher(obj, tel, check_attendance_time, manual_attendance_name, attendance_result, genearch_uid, is_class_admin, class_name1, is_friend, class_id, has_class_role) {
+            tel_current = tel;
+            context_current = "尊敬的家长，您的孩子" + childName + "在" + check_attendance_time + "的" + manual_attendance_name + "中，处于" + getManualAttendanceResult(parseInt(attendance_result, 10)) + "状态！";
+            uid_current = genearch_uid;
+            is_class_admin = is_class_admin;
+            class_name = class_name1;
+            is_friend = is_friend;
+            classId_current = class_id;
+            if (strIsNullOrEmpty(uid_gen)) {
+                uid_gen = genearch_uid;
+            }
+            $(obj).siblings().removeClass("bggray");
+            $(obj).addClass("bggray");
+            if (showType == 1) {
+                if (has_class_role == 1) {
+                    $("#admins").removeClass("hide");
+                }
+                else {
+                    $("#admins").addClass("hide");
+                }
+            }
+            else if (showType == 2) {
+                if (has_class_role == 1 && is_class_admin == 1) {
+                    //按钮都可以用
+                    $("#talk").removeAttr("disabled");
+                    $("#teachers").removeClass("hide");
+                    $("#send").css('width', '50%');
+                    $("#show").css('width', '50%');
+                }
+                else if (has_class_role == 1 && is_class_admin == 0) {
+                    //发起会话不可以用
+                    $("#talk").attr("disabled", "disabled");
+                    $("#teachers").removeClass("hide");
+                    $("#send").css('width', '0%');
+                    $("#show").css('width', '100%');
+                }
+                else if (has_class_role == 0) {
+                    //没有按钮可以用
+                    $("#teachers").addClass("hide");
+                }
+            }
+        }
+
+        function SetInfo(tel, creator_uid, creator_name, sel_class_name, isFriend, sel_class_id) {
+            tel_current = tel;
+            uid_current = creator_uid;
+            name_current = creator_name;
+            class_name = sel_class_name;
+            is_friend = isFriend;
+            classId_current = sel_class_id;
+
+            ShowMenu();
+        }
+
+        function ShowMenu() {
+            //return;
+            if (userType == "0" && strIsNullOrEmpty(uid_current)) {
+                error("该学生还未绑定家长！");
+                return;
+            }
+            var menu = "";
+            if (type == "1") {
+                if (userType == "0") {
+                    menu = { title: null, menus: [{ title: "push提醒", urlType: 2, url: "push()", user_type: userType, class_name: class_name }, { title: "发短信", urlType: 2, url: "sendMes()", user_type: userType, class_name: class_name }, { title: "打电话", urlType: 2, url: "tel()", user_type: userType, class_name: class_name }] };  //type:1：跳转  2：JS
+                }
+                else if (userType == "1") {
+                    if (uid == uid_current) {
+                        menu = { title: "联系" + name_current, menus: [{ title: "发短信", urlType: 2, url: "sendMes()", user_type: userType, class_name: class_name }, { title: "打电话", urlType: 2, url: "tel()", user_type: userType, class_name: class_name }] };  //type:1：跳转  2：JS
+                    }
+                    else {
+                        menu = { title: "联系" + name_current, menus: [{ title: "发起会话", urlType: 2, url: "talk()", user_type: userType, class_name: class_name }, { title: "发短信", urlType: 2, url: "sendMes()", user_type: userType, class_name: class_name }, { title: "打电话", urlType: 2, url: "tel()", user_type: userType, class_name: class_name }] };  //type:1：跳转  2：JS
+                    }
+                }
+            }
+            else if (type == "0") {
+                if (userType == "0") {
+                    menu = [{ title: "push提醒", is_title: false, type: 2, method: "push()", user_type: userType, class_name: class_name }, { title: "发短信", is_title: false, type: 2, method: "sendMes()", user_type: userType, class_name: class_name }, { title: "打电话", is_title: false, type: 2, method: "tel()", user_type: userType, class_name: class_name }];  //type:1：跳转  2：JS
+                }
+                else if (userType == "1") {
+                    if (uid == uid_current) { 
+                        menu = [{ title: "联系" + name_current, is_title: true, type: 2, method: "", user_type: userType, class_name: class_name }, { title: "发短信", is_title: false, type: 2, method: "sendMes()", user_type: userType, class_name: class_name }, { title: "打电话", is_title: false, type: 2, method: "tel()", user_type: userType, class_name: class_name }];  //type:1：跳转  2：JS
+                    }
+                    else {
+                        menu = [{ title: "联系" + name_current, is_title: true, type: 2, method: "", user_type: userType, class_name: class_name }, { title: "发起会话", is_title: false, type: 2, method: "talk()", user_type: userType, class_name: class_name }, { title: "发短信", is_title: false, type: 2, method: "sendMes()", user_type: userType, class_name: class_name }, { title: "打电话", is_title: false, type: 2, method: "tel()", user_type: userType, class_name: class_name }];  //type:1：跳转  2：JS
+                    }
+                }
+            }
+
+
+            if (type == "0") {
+                bridge.callHandler('showMenuForJS', { jsonArray: menu });
+                //surfaceView.showMenuForJS(JSON.stringify(menu));
+            }
+            else if (type == "1") {
+                bridge.send({
+                    showMenuForJS: menu
+                });
+            }
+        }
+
+        //发起会话
+        function talk() {
+            if (userType == "0" && $('#logList li.logitem.bggray').length == 0) {
+                error("请先选择考勤记录！");
+                return;
+            }
+            if (userType == "0" && strIsNullOrEmpty(uid_current)) {
+                error("该学生还未绑定家长！");
+                return;
+            }
+            if (is_friend == 1) {
+                if (type == "0") {
+                    // surfaceView.talkToFriendForJS(uid_current.toString());
+                    bridge.callHandler('talkToFriendForJS', { uid_to: uid_current });
+                }
+                else if (type == "1") {
+                    bridge.send({
+                        talkToFriendForJS: {
+                            uid_to: uid_current
+                        }
+                    });
+                }
+            }
+            else {
+                if (type == "0") {
+                    // surfaceView.talkForJS(classId_current.toString(), class_name, (userType == "0" ? 2 : userType == "1" ? 3 : 0).toString());
+                    bridge.callHandler('talkForJS', {
+                        class_id: classId_current,
+                        class_name: class_name,
+                        user_type: userType == "0" ? 2 : userType == "1" ? 3 : 0
+                    });
+                }
+                else if (type == "1") {
+                    bridge.send({
+                        talkForJS: {
+                            class_id: classId_current,
+                            class_name: class_name,
+                            user_type: userType == "0" ? 2 : userType == "1" ? 3 : 0
+                        }
+                    });
+                }
+            }
+
+        }
+
+        //push提醒
+        function push() {
+            if (userType == "0" && strIsNullOrEmpty(uid_current)) {
+                error("该学生还未绑定家长！");
+                return;
+            }
+            if (userType == "0" && strIsNullOrEmpty(context_current)) {
+                error("请先选择要推送的考勤信息！");
+                return;
+            }
+            $.ajax({
+                type: 'get',
+                url: domain + 'api/homeschoolcommunication/MesPushAdd',
+                async: false,
+                data: {
+                    message_type_id: 18,
+                    original_id: 0,
+                    uid: uid_gen,
+                    school_id: schoolId,
+                    user_type: 1,
+                    uid_child: uidChild,
+                    title: '手动考勤推送',
+                    context: context_current,
+                    status: 0,
+                    class_id: classId_current,
+                    original_id2: null,
+                    uid_send: uid
+                },
+                dataType: 'json',
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (data) {
+                    if (data.res == "0") {
+                        error("push推送失败");
+                    }
+                    else if (data.res == "1") {
+                        error("push推送成功");
+                    }
+                }
+            });
+        }
+
+        //发短信
+        function sendMes() {
+            if (strIsNullOrEmpty(tel)) {
+                error("请先选择要发短信的考勤信息！");
+                return;
+            }
+            if (userType == "0" && strIsNullOrEmpty(uid_current)) {
+                error("该学生还未绑定家长！");
+                return;
+            }
+            if (type == "0") {
+                //  surfaceView.sendMesForJS(tel_current, context_current);
+                bridge.callHandler('sendMesForJS', {
+                    tel: tel_current,
+                    context: context_current
+                });
+            }
+            else if (type == "1") {
+                bridge.send({
+                    sendMesForJS: {
+                        tel: tel_current,
+                        context: context_current
+                    }
+                });
+            }
+        }
+
+        //打电话
+        function tel() {
+            if (userType == "0" && strIsNullOrEmpty(uid_current)) {
+                error("该学生还未绑定家长！");
+                return;
+            }
+            if (strIsNullOrEmpty(tel)) {
+                error("请先选择要打电话的考勤信息！");
+                return;
+            }
+            if (type == "0") {
+                // surfaceView.telForJS(tel_current);
+                bridge.callHandler('telForJS', {
+                    tel: tel_current
+                });
+            }
+            else if (type == "1") {
+                bridge.send({
+                    telForJS: {
+                        tel: tel_current
+                    }
+                });
+            }
+        }
+
+
+        function select() {
+            var array = {
+                title: '筛选结果',
+                url: '/homeschoolcommunication/manualattendance/select.html?uid=' + uid + '&date=' + date + "&school_id=" + school_id + "&user_type=" + user_type + "&class_id=" + class_id,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(array);
+        }
+        //时间选择控件
+        // time: 0, date:1, dateandtime:2
+        function selectDate(obj, datetype) {
+            var seldate = $(obj).val();
+            if (type == "1") {
+                bridge.callHandler("selectDatetime", { type: datetype, seldate: seldate }, function (data) {
+                    $(obj).val(data.dateTime);
+                    bindAttendanceLog();
+                });
+            }
+            else if (type == "0") {
+                var id = $(obj).attr('id');
+                // surfaceView.selectDatetime(datetype, seldate, id);
+                bridge.callHandler("selectDatetime", { type: datetype, seldate: seldate, id: id });
+            }
+        }
+        //设置时间
+        function setDate(id, data) {
+            $("#" + id).val(data);
+            bindAttendanceLog();
+        }
+    </script>
+</head>
+<body>
+    <div data-role="page" data-theme="b" style="padding-bottom:4rem;">
+        <div id="children" class="mtonerem" style="display: none;" data-role="header" data-theme="a">
+            <h1 style="display: none;">header</h1>
+            <ul></ul>
+        </div>
+        <div class="mt10 wb bgwhite searchdiv">
+            <div class="widper100 relative">
+                <input type="text" class="bgiconitem widper100 relative" onclick="selectDate(this,1)" name="txt_att_date" id="txt_att_date" readonly="readonly">
+                <img class="icon mt2 abicon" src="../../images/dateofbirth.png" />
+            </div>
+
+        </div>
+        <div>
+            <ul id="logList" class="loadmore"></ul>
+        </div>
+    </div>
+
+    <div id="teachers" class="hide bottom tcenter wb">
+        <div id="show" class="widper50 wb " onclick="ShowMenu()">
+            <div class="widper40 tright mt10">
+                <img src="../../images/contact.png" class="icon" />
+            </div>
+            <div class="widper60 tleft br1 mt10">
+                <input type="button" class="btnbgnone y-font" value="联系家长" />
+            </div>
+        </div>
+        <div id="send" class="widper50 wb" onclick="talk()">
+            <div class="widper40 tright mt10">
+                <img src="../../images/text.png" class="icon" />
+            </div>
+            <div class="widper60 tleft mt10">
+                <input type="button" id="talk" class="btnbgnone y-font" value="发起会话" />
+            </div>
+        </div>
+    </div>
+    <div id="admins" class="hide bottom tcenter wb">
+        <div class="widper32 wb br1 mlonerem mt3" onclick="push()">
+            <div>
+                <img class="miniicon mt6" src="../../images/text.png">
+            </div>
+            <div>
+                <input type="button" class="btnbgnone p14 y-font" value="push提醒" />
+            </div>
+        </div>
+        <div class="widper32 wb br1 mt3" onclick="sendMes()">
+            <div>
+                <img class="miniicon mlp6 mt6" src="../../images/messages.png">
+            </div>
+            <div>
+                <input type="button" class="btnbgnone p14  y-font" value="发短信" />
+            </div>
+        </div>
+        <div class="widper32 wb mt3 " onclick="tel()">
+            <div>
+                <img class="miniicon mlp6 mt6" src="../../images/contact.png">
+            </div>
+            <div>
+                <input type="button" class="btnbgnone p14  y-font" value="打电话" />
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

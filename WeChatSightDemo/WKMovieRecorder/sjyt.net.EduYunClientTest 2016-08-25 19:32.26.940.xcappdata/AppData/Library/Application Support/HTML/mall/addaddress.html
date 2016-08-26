@@ -1,0 +1,322 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>添加地址</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        var uid = request('uid');
+        var callbackurl = request('callbackurl');
+        var fromlist = request('fromlist');
+        var position = request('position');
+        var positionp = request('positionp');
+        $(function () {
+            if (!strIsNullOrEmpty(type) && (type == '0' || type == '1')) {
+                $('#btnSave').hide();
+            }
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+
+            $('#txt_uid').val(uid);
+            //绑定省
+            $.get(domain + 'api/mall/GetProvinceList', {}, function (json) {
+                var html = '';
+                $.each(json.rows, function (i, n) {
+                    html += '<option value="' + n.id + '">' + n.name + '</option>';
+                });
+                $('#txt_province_id').append(html);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+            //切换省重新绑定市、区
+            $('#txt_province_id').change(function () {
+                var province = $(this).val();
+                $('#txt_city_id').empty();
+                $('#txt_area_id').empty();
+                $('#txt_city_id').append('<option value="">--市--</option>');
+                $('#txt_area_id').append('<option value="">--区--</option>');
+                if (province != '') {
+                    $.get(domain + 'api/mall/GetCityList',
+                        { province_id: province },
+                        function (json) {
+                            var html = '';
+                            $.each(json.rows, function (i, n) {
+                                html += '<option value="' + n.id + '">' + n.name + '</option>';
+                            });
+                            $('#txt_city_id').append(html);
+                        }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                            error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                        });
+                }
+            });
+            //切换市重新绑定区
+            $('#txt_city_id').change(function () {
+                var city = $(this).val();
+                $('#txt_area_id').empty();
+                $('#txt_area_id').append('<option value="">--区--</option>');
+                if (city != '') {
+                    $.get(domain + 'api/mall/GetAreaList',
+                        { city_id: city },
+                        function (json) {
+                            var html = '';
+                            $.each(json.rows, function (i, n) {
+                                html += '<option value="' + n.id + '">' + n.name + '</option>';
+                            });
+                            $('#txt_area_id').append(html);
+                        }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                            error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                        });
+                }
+            });
+            $('#btnSave').click(function () {
+                addAddress();
+            });
+        });
+        var isSaving = 0; 
+        function addAddress() {
+            if (isSaving === 1) {
+                return;
+            }
+            trimAll();
+            var linkman = $('#txt_linkman').val();
+            if (!checkLength(linkman, '收货人', 2, 10)) {
+                return;
+            }
+            var phoneNumber = $('#txt_phone_number').val();
+            if (phoneNumber == 0) {
+                error('请输入联系电话！');
+                return;
+            }
+            if (!isMobilePhone(phoneNumber)) {
+                error('联系电话格式不正确！');
+                return;
+            }
+            var provinceId = $('#txt_province_id').val();
+            if (provinceId.length == 0) {
+                error('请选择省！');
+                return;
+            }
+            var citryId = $('#txt_city_id').val();
+            if (citryId.length == 0) {
+                error('请选择市！');
+                return;
+            }
+            var areaId = $('#txt_area_id').val();
+            if (areaId.length == 0) {
+                error('请选择区！');
+                return;
+            }
+            var fullAddress = $('#txt_full_address').val();
+            if (!checkLength(fullAddress, '详细地址', 6, 100)) {
+                return;
+            }
+            var zipcode = $('#txt_zip_code').val();
+            if (!checkLength(zipcode, '邮政编码', 6, 6)) {
+                return;
+            }
+            if (!isInt(zipcode)) {
+                error('邮政编码格式不正确！');
+                return;
+            }
+            pop('正在保存');
+            isSaving = 1;
+            $.ajax({
+                url: domain + 'api/mall/AddAddress',
+                type: 'POST',
+                data: $('form').serialize(),
+                dataType: 'json',
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    clearpop();
+                    isSaving = 0;
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                },
+                success: function (json) {
+                    isSaving = 0;
+                    clearpop();
+                    if (json.res > 0) {
+                        if (!strIsNullOrEmpty(callbackurl)) {
+                            if (strIsNullOrEmpty(position) || position == "addresslist") {
+                                if (!strIsNullOrEmpty(positionp)) {
+                                    var array = {
+                                        title: '地址列表',
+                                        url: '/mall/addresslist.html?uid=' + uid + '&position=' + positionp + '&callbackurl=' + callbackurl,
+                                        urlType: 1,
+                                        close: true,
+                                        children: [
+                                            {
+                                                title: '添加地址',
+                                                url: 'addAddress()',
+                                                urlType: '2'
+                                            }
+                                        ]
+                                    };
+                                    appRedirect(array);
+                                } else {
+                                    var array = {
+                                        title: '地址列表',
+                                        url: '/mall/addresslist.html?uid=' + uid + '&callbackurl=' + callbackurl,
+                                        urlType: 1,
+                                        close: true,
+                                        children: [
+                                            {
+                                                title: '添加地址',
+                                                url: 'addAddress()',
+                                                urlType: '2'
+                                            }
+                                        ]
+                                    };
+                                    appRedirect(array);
+                                }
+
+                            }
+                            if (!strIsNullOrEmpty(type)) {
+                                if (position == "confirmgift") {
+                                    var array = {
+                                        title: '确认订单',
+                                        url: 'setAddressId(\'' + json.res + '\')',
+                                        urlType: 2,
+                                        close: true,
+                                        children: []
+                                    };
+                                    appRedirect(array);
+                                } else if (position == "createorder") {
+                                    var array = {
+                                        title: '填写订单',
+                                        url: 'setAddressId(\'' + json.res + '\')',
+                                        urlType: 2,
+                                        close: true,
+                                        children: [
+                                            {
+                                                title: '我的订单',
+                                                url: '/mall/orderlist.html?uid=' + uid,
+                                                urlType: '1',
+                                                childTitle: '我的订单'
+                                            }
+                                        ]
+                                    };
+                                    appRedirect(array);
+                                }
+                            } else {
+                                callbackurl = decodeURIComponent(callbackurl);
+                                if (callbackurl.indexOf('addressid') >= 0) {
+                                    callbackurl = callbackurl.replace(/&addressid.*/, '');
+                                }
+                                if (position == "confirmgift") {
+                                    var array = {
+                                        title: '确认订单',
+                                        url: callbackurl + (callbackurl.indexOf('?') < 0 ? '?' : '&') + 'addressid=' + json.res,
+                                        urlType: 1,
+                                        close: true,
+                                        children: []
+                                    };
+                                    appRedirect(array);
+                                } else if (position == "createorder") {
+                                    var array = {
+                                        title: '填写订单',
+                                        url: callbackurl + (callbackurl.indexOf('?') < 0 ? '?' : '&') + 'addressid=' + json.res,
+                                        urlType: 1,
+                                        close: true,
+                                        children: [
+                                            {
+                                                title: '我的订单',
+                                                url: '/mall/orderlist.html?uid=' + uid,
+                                                urlType: '1',
+                                                childTitle: '我的订单'
+                                            }
+                                        ]
+                                    };
+                                    appRedirect(array);
+                                }
+                            }
+                        } else {
+                            var array = {
+                                title: '地址列表',
+                                url: '/mall/addresslist.html?uid=' + uid + '&position=' + positionp + '&callbackurl=' + callbackurl,
+                                urlType: 1,
+                                close: true,
+                                children: [{
+                                    title: '添加地址',
+                                    url: 'addAddress()',
+                                    urlType: '2'
+                                }]
+                            };
+                            appRedirect(array);
+                        }
+                    }
+                    else {
+                        error(json.msg);
+                    }
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <form>
+        <div class="bgblock mtonerem tright">
+            <div class="bgitem  mlper6 wb ">
+                <input type="hidden" id="txt_uid" name="uid" />
+                <!--<label>收&nbsp;货&nbsp;人：</label>-->
+                <div class="widper10 tcenter">
+                    <img class="icon" src="../images/mychild.png" />
+                </div>
+                <div class="widper85">
+                    <input type="text" class="bgiconitem " id="txt_linkman" name="linkman" maxlength="10" placeholder="收货人姓名" />
+                </div>
+            </div>
+            <div class="bgitem mlper6 wb ">
+                <!--<label>联系电话：</label>-->
+                <div class="widper10 tcenter">
+                    <img class="icon" src="../images/phone.png" />
+                </div>
+                <div class="widper85">
+                    <input type="tel" class="bgiconitem" id="txt_phone_number" name="phone_number" maxlength="11" placeholder="联系电话" />
+                </div>
+            </div>
+            <div class="widper100 nowrap ">
+                <!--<label>所在地区：</label>-->
+                <div class="bgitem oneline inline tleft trim ">
+                    <select id="txt_province_id" name="province_id">
+                        <option value="">--省--</option>
+                    </select>
+                    <select id="txt_city_id" name="city_id">
+                        <option value="">--市--</option>
+                    </select>
+                    <select id="txt_area_id" name="area_id">
+                        <option value="">--区--</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bgitem mlper6 wb ">
+                <!--<label>详细地址：</label>-->
+                <div class="widper10 tcenter">
+                    <img class="icon" src="../images/location.png" />
+                </div>
+                <div class="widper85">
+                    <input type="text" id="txt_full_address" name="full_address" maxlength="100" class="bgiconitem  " placeholder="详细地址" />
+                </div>
+            </div>
+            <div class="bgitem mlper6 wb last ">
+                <!--<label>邮政编码：</label>-->
+                <div class="widper10 tcenter">
+                    <img class="icon" src="../images/post.png" />
+                </div>
+                <div class="widper85">
+                    <input type="number" id="txt_zip_code" name="zip_code" maxlength="6" class="bgiconitem  number " placeholder="邮政编码" />
+                </div>
+            </div>
+        </div>
+        <div class="tcenter ">
+            <button id="btnSave" class="btn btnwhite btnbig mtb10" type="button">保存</button>
+        </div>
+    </form>
+</body>
+</html>

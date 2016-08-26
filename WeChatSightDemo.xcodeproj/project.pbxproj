@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		679CA8A91D6FE3F300CA0EE4 /* WCSPreviewViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 679CA8A81D6FE3F300CA0EE4 /* WCSPreviewViewController.m */; };
+		679CA8AD1D7019D400CA0EE4 /* UIImageView+PlayGIF.m in Sources */ = {isa = PBXBuildFile; fileRef = 679CA8AC1D7019D400CA0EE4 /* UIImageView+PlayGIF.m */; };
+		679CA8B01D7023BA00CA0EE4 /* WCSPlayMovieController.m in Sources */ = {isa = PBXBuildFile; fileRef = 679CA8AF1D7023BA00CA0EE4 /* WCSPlayMovieController.m */; };
 		67C63BC11D66FB8F001A53D4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63BC01D66FB8F001A53D4 /* main.m */; };
 		67C63BC41D66FB8F001A53D4 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63BC31D66FB8F001A53D4 /* AppDelegate.m */; };
 		67C63BC71D66FB8F001A53D4 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63BC61D66FB8F001A53D4 /* ViewController.m */; };
@@ -15,6 +18,13 @@
 		67C63BCF1D66FB8F001A53D4 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 67C63BCD1D66FB8F001A53D4 /* LaunchScreen.storyboard */; };
 		67C63BDA1D66FB8F001A53D4 /* WeChatSightDemoTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63BD91D66FB8F001A53D4 /* WeChatSightDemoTests.m */; };
 		67C63BE51D66FB8F001A53D4 /* WeChatSightDemoUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63BE41D66FB8F001A53D4 /* WeChatSightDemoUITests.m */; };
+		67C63BF91D66FC76001A53D4 /* WCSCaptureViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63BF81D66FC76001A53D4 /* WCSCaptureViewController.m */; };
+		67C63C051D66FCA6001A53D4 /* WKMovieRecorder.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63BFC1D66FCA6001A53D4 /* WKMovieRecorder.m */; };
+		67C63C061D66FCA6001A53D4 /* WKMovieWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63BFE1D66FCA6001A53D4 /* WKMovieWriter.m */; };
+		67C63C071D66FCA6001A53D4 /* WKProgressView.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63C001D66FCA6001A53D4 /* WKProgressView.m */; };
+		67C63C081D66FCA6001A53D4 /* WKTestAudioOutput.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63C021D66FCA6001A53D4 /* WKTestAudioOutput.m */; };
+		67C63C091D66FCA6001A53D4 /* WKVideoConverter.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63C041D66FCA6001A53D4 /* WKVideoConverter.m */; };
+		67C63C0C1D6704D7001A53D4 /* WKScaleButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 67C63C0B1D6704D7001A53D4 /* WKScaleButton.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,6 +45,12 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		679CA8A71D6FE3F300CA0EE4 /* WCSPreviewViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WCSPreviewViewController.h; sourceTree = "<group>"; };
+		679CA8A81D6FE3F300CA0EE4 /* WCSPreviewViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WCSPreviewViewController.m; sourceTree = "<group>"; };
+		679CA8AB1D7019D400CA0EE4 /* UIImageView+PlayGIF.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIImageView+PlayGIF.h"; sourceTree = "<group>"; };
+		679CA8AC1D7019D400CA0EE4 /* UIImageView+PlayGIF.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIImageView+PlayGIF.m"; sourceTree = "<group>"; };
+		679CA8AE1D7023BA00CA0EE4 /* WCSPlayMovieController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WCSPlayMovieController.h; sourceTree = "<group>"; };
+		679CA8AF1D7023BA00CA0EE4 /* WCSPlayMovieController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WCSPlayMovieController.m; sourceTree = "<group>"; };
 		67C63BBC1D66FB8E001A53D4 /* WeChatSightDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WeChatSightDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		67C63BC01D66FB8F001A53D4 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		67C63BC21D66FB8F001A53D4 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -51,6 +67,20 @@
 		67C63BE01D66FB8F001A53D4 /* WeChatSightDemoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WeChatSightDemoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		67C63BE41D66FB8F001A53D4 /* WeChatSightDemoUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WeChatSightDemoUITests.m; sourceTree = "<group>"; };
 		67C63BE61D66FB8F001A53D4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		67C63BF71D66FC76001A53D4 /* WCSCaptureViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WCSCaptureViewController.h; sourceTree = "<group>"; };
+		67C63BF81D66FC76001A53D4 /* WCSCaptureViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WCSCaptureViewController.m; sourceTree = "<group>"; };
+		67C63BFB1D66FCA6001A53D4 /* WKMovieRecorder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WKMovieRecorder.h; sourceTree = "<group>"; };
+		67C63BFC1D66FCA6001A53D4 /* WKMovieRecorder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WKMovieRecorder.m; sourceTree = "<group>"; };
+		67C63BFD1D66FCA6001A53D4 /* WKMovieWriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WKMovieWriter.h; sourceTree = "<group>"; };
+		67C63BFE1D66FCA6001A53D4 /* WKMovieWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WKMovieWriter.m; sourceTree = "<group>"; };
+		67C63BFF1D66FCA6001A53D4 /* WKProgressView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WKProgressView.h; sourceTree = "<group>"; };
+		67C63C001D66FCA6001A53D4 /* WKProgressView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WKProgressView.m; sourceTree = "<group>"; };
+		67C63C011D66FCA6001A53D4 /* WKTestAudioOutput.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WKTestAudioOutput.h; sourceTree = "<group>"; };
+		67C63C021D66FCA6001A53D4 /* WKTestAudioOutput.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WKTestAudioOutput.m; sourceTree = "<group>"; };
+		67C63C031D66FCA6001A53D4 /* WKVideoConverter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WKVideoConverter.h; sourceTree = "<group>"; };
+		67C63C041D66FCA6001A53D4 /* WKVideoConverter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WKVideoConverter.m; sourceTree = "<group>"; };
+		67C63C0A1D6704D7001A53D4 /* WKScaleButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WKScaleButton.h; sourceTree = "<group>"; };
+		67C63C0B1D6704D7001A53D4 /* WKScaleButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WKScaleButton.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +108,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		679CA8AA1D7019D400CA0EE4 /* Category */ = {
+			isa = PBXGroup;
+			children = (
+				679CA8AB1D7019D400CA0EE4 /* UIImageView+PlayGIF.h */,
+				679CA8AC1D7019D400CA0EE4 /* UIImageView+PlayGIF.m */,
+			);
+			path = Category;
+			sourceTree = "<group>";
+		};
 		67C63BB31D66FB8E001A53D4 = {
 			isa = PBXGroup;
 			children = (
@@ -101,6 +140,10 @@
 		67C63BBE1D66FB8F001A53D4 /* WeChatSightDemo */ = {
 			isa = PBXGroup;
 			children = (
+				679CA8AA1D7019D400CA0EE4 /* Category */,
+				67C63BFA1D66FCA6001A53D4 /* WKMovieRecorder */,
+				67C63BF51D66FC64001A53D4 /* Controller */,
+				67C63BF61D66FC64001A53D4 /* View */,
 				67C63BC21D66FB8F001A53D4 /* AppDelegate.h */,
 				67C63BC31D66FB8F001A53D4 /* AppDelegate.m */,
 				67C63BC51D66FB8F001A53D4 /* ViewController.h */,
@@ -138,6 +181,45 @@
 				67C63BE61D66FB8F001A53D4 /* Info.plist */,
 			);
 			path = WeChatSightDemoUITests;
+			sourceTree = "<group>";
+		};
+		67C63BF51D66FC64001A53D4 /* Controller */ = {
+			isa = PBXGroup;
+			children = (
+				67C63BF71D66FC76001A53D4 /* WCSCaptureViewController.h */,
+				67C63BF81D66FC76001A53D4 /* WCSCaptureViewController.m */,
+				679CA8A71D6FE3F300CA0EE4 /* WCSPreviewViewController.h */,
+				679CA8A81D6FE3F300CA0EE4 /* WCSPreviewViewController.m */,
+				679CA8AE1D7023BA00CA0EE4 /* WCSPlayMovieController.h */,
+				679CA8AF1D7023BA00CA0EE4 /* WCSPlayMovieController.m */,
+			);
+			path = Controller;
+			sourceTree = "<group>";
+		};
+		67C63BF61D66FC64001A53D4 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				67C63C0A1D6704D7001A53D4 /* WKScaleButton.h */,
+				67C63C0B1D6704D7001A53D4 /* WKScaleButton.m */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		67C63BFA1D66FCA6001A53D4 /* WKMovieRecorder */ = {
+			isa = PBXGroup;
+			children = (
+				67C63BFB1D66FCA6001A53D4 /* WKMovieRecorder.h */,
+				67C63BFC1D66FCA6001A53D4 /* WKMovieRecorder.m */,
+				67C63BFD1D66FCA6001A53D4 /* WKMovieWriter.h */,
+				67C63BFE1D66FCA6001A53D4 /* WKMovieWriter.m */,
+				67C63BFF1D66FCA6001A53D4 /* WKProgressView.h */,
+				67C63C001D66FCA6001A53D4 /* WKProgressView.m */,
+				67C63C011D66FCA6001A53D4 /* WKTestAudioOutput.h */,
+				67C63C021D66FCA6001A53D4 /* WKTestAudioOutput.m */,
+				67C63C031D66FCA6001A53D4 /* WKVideoConverter.h */,
+				67C63C041D66FCA6001A53D4 /* WKVideoConverter.m */,
+			);
+			path = WKMovieRecorder;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -202,11 +284,13 @@
 		67C63BB41D66FB8E001A53D4 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				CLASSPREFIX = WCS;
 				LastUpgradeCheck = 0730;
 				ORGANIZATIONNAME = "吴珂";
 				TargetAttributes = {
 					67C63BBB1D66FB8E001A53D4 = {
 						CreatedOnToolsVersion = 7.3;
+						DevelopmentTeam = XZ34K9Y7K9;
 					};
 					67C63BD41D66FB8F001A53D4 = {
 						CreatedOnToolsVersion = 7.3;
@@ -271,8 +355,18 @@
 			buildActionMask = 2147483647;
 			files = (
 				67C63BC71D66FB8F001A53D4 /* ViewController.m in Sources */,
+				67C63BF91D66FC76001A53D4 /* WCSCaptureViewController.m in Sources */,
 				67C63BC41D66FB8F001A53D4 /* AppDelegate.m in Sources */,
+				67C63C081D66FCA6001A53D4 /* WKTestAudioOutput.m in Sources */,
+				679CA8A91D6FE3F300CA0EE4 /* WCSPreviewViewController.m in Sources */,
+				67C63C061D66FCA6001A53D4 /* WKMovieWriter.m in Sources */,
+				67C63C091D66FCA6001A53D4 /* WKVideoConverter.m in Sources */,
+				67C63C0C1D6704D7001A53D4 /* WKScaleButton.m in Sources */,
 				67C63BC11D66FB8F001A53D4 /* main.m in Sources */,
+				67C63C071D66FCA6001A53D4 /* WKProgressView.m in Sources */,
+				67C63C051D66FCA6001A53D4 /* WKMovieRecorder.m in Sources */,
+				679CA8B01D7023BA00CA0EE4 /* WCSPlayMovieController.m in Sources */,
+				679CA8AD1D7019D400CA0EE4 /* UIImageView+PlayGIF.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -415,10 +509,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = WeChatSightDemo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = WuKong.WeChatSightDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
 		};
@@ -426,10 +523,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = WeChatSightDemo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = WuKong.WeChatSightDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Release;
 		};
@@ -498,6 +598,7 @@
 				67C63BEB1D66FB8F001A53D4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		67C63BEC1D66FB8F001A53D4 /* Build configuration list for PBXNativeTarget "WeChatSightDemoTests" */ = {
 			isa = XCConfigurationList;
@@ -506,6 +607,7 @@
 				67C63BEE1D66FB8F001A53D4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		67C63BEF1D66FB8F001A53D4 /* Build configuration list for PBXNativeTarget "WeChatSightDemoUITests" */ = {
 			isa = XCConfigurationList;
@@ -514,6 +616,7 @@
 				67C63BF11D66FB8F001A53D4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

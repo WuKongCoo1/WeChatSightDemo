@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>心情</title>
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        function save() {
+            var uid = request("uid");
+            var sign = $("#sign").val();
+
+            if (sign.length > 30) {
+                error("个性签名不能超过30个字！");
+                return;
+            }
+
+            $.ajax({
+                type: "get",
+                async: true,
+                url: domain + "api/Customer/UserSignUpdate",
+                data: {
+                    uid: uid,
+                    sign: sign
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                }, success: function (data) {
+                    if (data.res == "1") {
+                        error("更新成功");
+                    }
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <textarea id="sign"></textarea>
+    <input type="button" value="保存" onclick="save()" />
+</body>
+</html>

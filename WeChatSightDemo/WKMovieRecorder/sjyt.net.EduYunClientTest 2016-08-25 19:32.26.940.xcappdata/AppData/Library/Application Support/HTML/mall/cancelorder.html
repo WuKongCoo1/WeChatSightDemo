@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>取消订单</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script>
+        var uid = request('uid');
+        var orderNumber = request('order_number');
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            $.get(domain + 'api/mall/GetCancelReasonList', {}, function(json) {
+                if (json.operationStatus == 1) {
+                    var html = '';
+                    $.each(json.rows, function(i, n) {
+                        html += '<option value="' + n.id + '">' + n.name + '</option>';
+                    });
+                    $('#drp_canel_reason').append(html);
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        });
+
+        function save() {
+            trimAll();
+            var reason = $('#drp_canel_reason option:selected').text();
+            var otherReason = $('#txtOtherReason').val();
+            $.post(domain + 'api/mall/CancelOrder', {
+                orderNumber: orderNumber,
+                orderNumberChild: 0,
+                uid: uid,
+                orderType: 1,
+                reason: reason,
+                otherReason: otherReason
+            }, function (json) {
+                error(json.message);
+                if (json.operationStatus == 1) {
+                    setTimeout(function () {
+                        var paramArray =
+                        {
+                            title: '我的订单',
+                            url: '/mall/orderlist.html?uid=' + uid,
+                            urlType: 1,
+                            close: true,
+                            children: []
+                        };
+                        appRedirect(paramArray);
+                    }, 3000);
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="bgblock mtonerem tright">
+        <div class="bgitem oneline wb palr ">
+            <div class="g-font widper40 tleft">取消原因</div>
+            <div class="widper60">
+                <select class="widper100" id="drp_canel_reason">
+                    <!--<option value="">--请选择取消原因--</option>-->
+                </select>
+            </div>
+        </div>
+        <div class="palr">
+            <textarea id="txtOtherReason" class="hei6rem" rows="3" placeholder="其他原因" style="width: 100%;"></textarea>
+        </div>
+    </div>
+    <div class="tcenter">
+        <button type="button" class="btn btnwhite btnbig" onclick="save()">提交</button>
+        <a class="tel" href="tel:400-661-6133" class="">400-661-6133</a>
+    </div>
+</body>
+</html>

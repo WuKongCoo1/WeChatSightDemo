@@ -1,0 +1,290 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>资讯列表</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <link href="../css/newsnormal.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script src="../js/newsnormal.js"></script>
+    <script src="../js/jquery.touchSlider.js"></script>
+    <script src="../js/img.js"></script>
+    <script>
+       
+        var uid = request('uid');
+        var callbackurl = request('callbackurl');
+        var category_id;
+        var IsHasTopImg = "";
+        var tmpShowChild = "";
+        var BindCatagory = function () {
+
+            $.get(domain + 'api/news/GetCatagory', {}, function (json) {
+                if (strIsNullOrEmpty(json.rows) || json.rows.length < 1) {
+                    tmpStr = '<div class="nodata noleave">哦吼~这里什么都没有</div>';
+                    $('.nordiv').html(tmpStr);
+                    $(".loading").hide();
+                    return;
+                }
+                var tmpStr = '';
+                $.each(json.rows, function (i, n) {
+                    if (json.rows.length > 2 && i == 3) {
+                        tmpStr += '<li class="morelead more" onclick="showmodel(true)">+更多</li><li class="morelead less" onclick="showmodel(false)" style="display:none">-收起</li>';
+
+                    }
+                    tmpStr += '<li class="nor' + (i == 0 ? " tabon" : "") + '" hid=' + n._id + ' onclick="BindTopNews(this,' + n._id + ');BindNewsPager(this,' + n._id + ',' + 1 + ',' + PageSize + ');">' + (n._name == "资讯" ? "全部" : n._name) + '</li>';
+                    if (i == 0) {
+                        category_id = n._id;
+                        BindTopNews(null, n._id);
+                        BindNewsPager(null, category_id, 1, PageSize);
+                    }
+                });
+                $(".clearfix").html(tmpStr);
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+
+        };
+
+        var linkFun = function (article_id) {
+            var paramArray = {
+                title: '资讯详情',
+                url: '/news/detail.html?uid=' + uid + "&article_id=" + article_id,
+                urlType: 1,
+                close: false,
+                children: []
+            };
+            appRedirect(paramArray);
+        };
+
+        var BindTopNews = function (obj, category_id) {
+            var flicking_title = "";
+            var flicking_con = "";
+            var main_image = "";
+            isContinue = true;
+            if (obj != null) {
+                PageIndex = 1;
+                category_id = category_id;
+                if ($(obj).attr("class").indexOf("tabon") > 0) {
+                    return;
+                }
+            }
+            $.ajax({
+                type: "get",
+                async: false,
+                url: domain + "api/news/GetTopNewsNew",
+                data: { category_id: category_id, uid: uid },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    clearpop();
+                    isSaving = 0;
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                },
+                success: function (json) {
+                    var tmpStr = '';
+                    if (!strIsNullOrEmpty(json.rows)) {
+                        $.each(json.rows, function (i, n) {
+                            if (i > 5) return false;
+                            var tmpIndex = i + 1;
+
+                            var tmpVal2 = "";// "@Url.Action("detail", "News")" + '?id=' + n.id;
+                            var tmpShowChild = "";
+                            if (n.comment == 1)
+                                tmpShowChild = ",'true'";
+                            var tmpUrlLink = "linkFun(" + n.id + ");"; //"LinkFun('" + tmpVal2 + "','资讯详情'" + tmpShowChild + ")";
+                            flicking_title += '<div class="hottitle ml10 ' + tmpIndex + ' hide ">' + n.title + '</div>';
+                            flicking_con += '<a href="javascript:;" onclick=' + tmpUrlLink + '>' + tmpIndex + '</a>';
+
+                            var imgUrl = '<img src="' + GetImg(n.id) + '" />';
+                            main_image += '<li><a href="javascript:;" onclick=' + tmpUrlLink + '>' + imgUrl + '</a></li>';
+                        });
+                        tmpStr += '<div class="kePublic"><div class="hot"><div class="hottip">热点</div><div class="flicking_title">';
+                        tmpStr += flicking_title;
+                        tmpStr += '</div><div class="main_visual"><div class="flicking_con">';
+                        tmpStr += flicking_con;
+                        tmpStr += '</div><div class="main_image"><ul style="width:100%">';
+                        tmpStr += main_image;
+                        tmpStr += '</ul></div></div></div></div>';
+                        $(".nordiv").html(tmpStr);
+                        picMove();
+                        IsHasTopImg = true;
+                    } else {
+                        IsHasTopImg = false;
+                        $(".nordiv").html("");
+                    }
+                }
+            });
+        };
+
+        var BindNewsPager = function (obj, category_id, PageIndex, PageSize) {
+            if (obj != null) {
+                PageIndex = 1;
+                category_id = category_id;
+                if ($(obj).attr("class").indexOf("tabon") > 0) {
+                    return;
+                }
+                $(".clearfix li").removeClass("tabon");
+                $(obj).addClass("tabon");
+            }
+            showmodel(false);
+
+            $.get(domain + 'api/news/GetNewsListPagerNew', { uid: uid, index: PageIndex, size: PageSize, category_id: category_id }, function (json) {
+                var tmpStr = '';
+                $(".loading").hide();
+
+                if (!strIsNullOrEmpty(json.rows)) {
+                    $.each(json.rows, function (i, n) {
+
+                        if (PageIndex == 1 && i == 0 && !IsHasTopImg) {
+                            if ($(".leadheader").css("display") != "none") {
+                                tmpStr += '<div class="mt-46"></div>';
+                            }
+                        }
+                        tmpStr += '<div class="newsitem wb ">';
+                        var imgUrl = GetImgThumbnail(n.id);
+                        if (imgUrl == "") {
+                            imgUrl = "../images/default-product.png";
+                        } else
+                            imgUrl = imgUrl;
+                        var tmpTitle = n.title;
+                        var tmpContext = removeHTMLTag(n.context.context);
+                        var tmpVal2 = "detail.html?article_id=" + n.id;// "@Url.Action("detail", "News")" + '?id=' + n.id;
+                      
+                        if (n.comment == 1)
+                            tmpShowChild = ",true";
+                        var tmpUrlLink = "linkFun(" + n.id + ");";// "LinkFun('" + tmpVal2 + "','" + escape('资讯详情') + "'" + tmpShowChild + ")";
+                      
+                        tmpStr += '<a href="javascript:;" onclick=' + tmpUrlLink + ' class="imga ml10">';
+                        tmpStr += '<img class="mtonerem" src="' + imgUrl + '" />';
+                        tmpStr += '</a>';
+
+                        tmpStr += '<div class="ml10 newsinfo widper70">';
+                        tmpStr += '<a class="block widper96 " href="javascript:;" onclick=' + tmpUrlLink + ' >';
+                        tmpStr += '<span class="nowap widper96">' + tmpTitle.substr(0, 15) + '</span>';
+                        tmpStr += '<span class="gray block break">';
+                        tmpStr += tmpContext.substr(0, 30);
+                        tmpStr += '</span>';
+                        tmpStr += '<div class="wb">';
+                        tmpStr += '<div class="gray">' + convertDateTimeToString(parseISO8601(n.publish_time)) + '</div>';
+                        if (n.comment == 1) {
+                            tmpStr += '<div class="gray ml10">' + n.comment_count + '评论</div>';
+                        }
+                        tmpStr += '</div>';
+                        tmpStr += '</a>';
+                        tmpStr += '</div>';
+                        tmpStr += '</div>';
+                    });
+                }
+                if (strIsNullOrEmpty(tmpStr) && PageIndex == 1) {
+                    tmpStr = '<div class="nodata noleave">哦吼~这里什么都没有</div>';
+                    $('.nordiv').html(tmpStr);
+                } else {
+                    $('.nordiv').append(tmpStr);
+
+                    $('img').bind('error', function () {
+                        $(this).attr('src', '../images/default-product.png');
+                        $(this).unbind('error');
+                     
+                    })
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            var newstype = request("newstype");
+            if (strIsNullOrEmpty(newstype) || newstype != "axdg") {
+                BindCatagory();
+            }
+            else {
+                $(".leadheader").hide();
+                //$(".nordiv").css("margin-top;", "-50px");
+                BindNewsPager(null, axdg_category_id, 1, PageSize);
+            }
+        });
+
+        var GetImg = function (article_id) {
+            var tmpStr = "";
+            $.ajax({
+                type: "get",
+                async: false,
+                url: domain + "api/news/GetNewsImgNew",
+                data: { article_id: article_id },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    clearpop();
+                    isSaving = 0;
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                },
+                success: function (data) {
+                    if (!strIsNullOrEmpty(data.res)) {
+                        tmpStr = data.res;
+                    }
+                }
+            });
+            return tmpStr;
+        };
+        var GetImgThumbnail = function (article_id) {
+            var tmpStr = "";
+            $.ajax({
+                type: "get",
+                async: false,
+                url: domain + "api/news/GetNewsImgNew",
+                data: { article_id: article_id,isthumbnail:1 },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    clearpop();
+                    isSaving = 0;
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");;
+                },
+                success: function (data) {
+                    if (!strIsNullOrEmpty(data.res)) {
+                        tmpStr = data.res;
+                    }
+                }
+            });
+            return tmpStr;
+        };
+
+        function gotask() {
+
+            //1	登录
+            //2	邀请TA人注册
+            //3	完善个人资料
+            //4	布置家庭作业
+            //5	发布学校通知
+            //6	发布学校活动
+            //7	发布考试成绩
+            //8	发布成长足迹
+            //9	成长足迹评论
+            //10 成长足迹点赞
+            //11 赠送礼物
+            //12 购买商品
+            //13 资讯评论/分享
+            //14 APP下载
+            if (type == "0") {
+                // surfaceView.goTask(id);
+                bridge.callHandler('goTask', { id: 11 });
+            }
+            else if (type == "1") {
+                bridge.send({ goTask: 11 });
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="loading">加载中...</div>
+    <div class="leadheader">
+        <ul class="clearfix"></ul>
+    </div>
+    <div class="nordiv loadmore">
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,266 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta name="HandheldFriendly" content="true" />
+    <meta content="telephone=no" name="format-detection" />
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <title></title>
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script type="text/javascript">
+        var index = 1;
+        var size = 10;
+        var count = 0;
+        var uid = request('uid');
+        var productAttr = request('product_type');
+
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            bindProductList();
+        });
+
+        function bindProductList() {
+            if (strIsNullOrEmpty(productAttr)) {
+                return;
+            }
+
+
+            $.ajax({
+                url: domain + 'api/mall/GetDesUid',
+                data: {
+                    uid: uid
+                },
+                async: false,
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (data) {
+                    if (data.operationStatus == 1) {
+                        uid = data.message;
+                    }
+                    else {
+                        $('body').children().remove();
+                        $('body').html('<div class="noleave nodata g-font">哦吼~这里什么都没有</div>');
+                        error('参数有误');
+                        $('.loading').addClass('hide');
+                    }
+                }
+            });
+
+            $.get(domain + 'api/mall/GetProductListPagerNew', {
+                attrs: productAttr,
+                name: '',
+                index: index,
+                size: size,
+                uid: uid
+            }, function (json) {
+                var html = '';
+                if (json.rows.length == 0) {
+                    $('body').children().remove();
+                    $('body').html('<div class="noleave nodata g-font">哦吼~这里什么都没有</div>');
+                } else {
+                    var listStr = "";
+                    for (var i = 0; i < json.rows.length; i++) {
+
+                        if (productAttr == 3) {
+                            listStr += '<div class="widper100 ">'
+                            listStr += '<div class="widper95 c-line bb1 patbb palr p18 wb " onclick="buy(' + json.rows[i].id + ')"><div class="widper10 mt2"><img class="scoreicon" src="../images/diamond2.png"></div><div class="widper50 mt2"><span>' + json.rows[i].receive_score + '</span>积分</div>' + '<div class="widper40"><span class="y-font mlonerem ">￥' + json.rows[i].product_price.toFixed(2) + '</div></div>';
+                            listStr += '</div>';
+                        } else if (productAttr == 6) {
+                            listStr += '<div class="widper100 ">'
+                            listStr += '<div class="widper95 c-line bb1 p18  patbb palr wb " onclick="buy(' + json.rows[i].id + ')"><div class="widper10 mt2"><img class="scoreicon" src="../images/diamond2.png"></div><div class="widper50 mt2"><span>' + json.rows[i].receive_msgcount + '</span>条</div>' + '<div class="widper40"><span class="y-font mlonerem ">￥' + json.rows[i].product_price.toFixed(2) + '</div></div>';
+                            listStr += '</div>';
+                        }
+                        else if (productAttr == 7) { //话费
+
+                            listStr += '<div class="widper25 mlper3 mb10 patb palr inline  tcenter productitem product_item' + (i == 0 ? " productselect" : "") + '" is_sell=' + json.rows[i].is_sell + '  product_id=' + json.rows[i].id + '>';
+                            listStr += '<div ><span>' + json.rows[i].get_tel_cost + '</span>元</div>';
+                            if (!strIsNullOrEmpty(json.rows[i].price_type) && json.rows[i].price_type.indexOf("1") != -1) {
+                                listStr += '<div><span class="y-font  ">' + json.rows[i].discount_score + '积分</div>';
+                            } else {
+                                listStr += '<div><span class="y-font  ">￥' + json.rows[i].product_price.toFixed(2) + '</div>';
+                            }
+                            listStr += '</div>';
+                        }
+                        else if (productAttr == 8) { //流量
+                            listStr += '<div class="widper25 mlper3 mb10 patb palr inline  tcenter productitem  product_item ' + (i == 0 ? " productselect" : "") + '" is_sell=' + json.rows[i].is_sell + ' product_id=' + json.rows[i].id + '>'
+                            listStr += '<div><span>' + json.rows[i].get_flow + '</span>M</div>';
+                            if (!strIsNullOrEmpty(json.rows[i].price_type) && json.rows[i].price_type.indexOf("1") != -1) {
+                                listStr += '<div><span class="y-font  ">' + json.rows[i].discount_score + '积分</div>';
+                            } else {
+                                listStr += '<div><span class="y-font  ">￥' + json.rows[i].product_price.toFixed(2) + '</div>';
+                            }
+                            listStr += '</div>';
+                        }
+                        else { //其他
+                            listStr += '<div class="widper100 ">'
+                            listStr += '<div class="widper95 c-line bb1 p18  patbb palr wb " onclick="buy(' + json.rows[i].id + ')"><div class="widper10 mt2"><img class="scoreicon" src="' + (strIsNullOrEmpty(json.rows[i].product_img) ? '../images/score_default.png' : json.rows[i].product_img) + '"></div><div class="widper50 mt2"><span>' + json.rows[i].name + '</span></div>';
+
+                            if (!strIsNullOrEmpty(json.rows[i].price_type) && json.rows[i].price_type.indexOf("1") != -1) {
+                                listStr += '<div><span class="y-font  ">' + json.rows[i].discount_score + '积分</div>';
+                            } else {
+                                listStr += '<div><span class="y-font  ">￥' + json.rows[i].product_price.toFixed(2) + '</div>';
+                            }
+                            listStr += '</div>';
+                            listStr += '</div>';
+                        }
+                        if (i == 0) {
+                            html += '<div class="pabonerem bgwhite ">';
+                            html += '<div class="widper100 bb1">';
+                            html += '<div  class="biggiftimg  ">' + '<img src="' + (strIsNullOrEmpty(json.rows[i].product_img) ? '../images/score_default.png' : json.rows[i].product_img) + '"  alt="' + json.rows[i].name + '"/>';
+                            html += '</div>';
+
+                            html += '<div class="wb mtonerem palr">'
+                            if (!strIsNullOrEmpty(json.rows[i].product_attr_name)) {
+                                html += '<div class="widper60 bold">' + json.rows[i].product_attr_name + '</div>';
+                            }
+                            html += '</div>'
+                            html += '<div class="mtonerem palr">产品介绍';
+                            html += '<div class="g-font c-line detail " id="pdetail2"></div></div>';
+                            html += '</div>'
+                            $("#pdetail").append(html);
+                            productdetail(json.rows[i].id);
+                        }
+                        listStr += '</div>'
+                    }
+                    if (productAttr == 7 || productAttr == 8) {
+                        listStr += '<div class="tright bottom">'
+                        listStr += '<input type="button" class="tinybtn btnwhite " onclick="give()" value="立即赠送" /> <input class="tinybtn btnwhite " type="button" onclick="gobuy()" value="立即购买" />';
+                        listStr += '</div>'
+                    }
+                    $("#list").html(listStr);
+
+                    $(".loading").addClass('hide');
+                    $(".product_item").click(function () {
+                        $(".product_item").removeClass("productselect");
+                        $(this).addClass("productselect");
+                        var is_sell = $(this).attr("is_sell");
+                        //是否在售
+                        if (is_sell == "false") {
+                            $(".bottom").html('<div class="tcenter">此商品暂停销售</div>');
+                        }
+                        else {
+                            $(".bottom").html('<input type="button" class="tinybtn btnwhite " onclick="give()" value="立即赠送" /> <input class="tinybtn btnwhite " type="button" onclick="gobuy()" value="立即购买" />');
+                        }
+                        var product_id = $(this).attr('product_id');
+                        productdetail(product_id);
+                    });
+                }
+
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function productdetail(id) {
+            $.get(domain + 'api/mall/GetProductDetailNew', {
+                product_id: id
+            }, function (data) {
+                var html = '';
+                var obj = data.rows;
+                if (!strIsNullOrEmpty(obj.detail)) {
+                    $("#pdetail2").html(obj.detail);
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function buy(id) {
+            $.get(domain + 'api/mall/GetProductExist', {
+                product_id: id
+            }, function (json) {
+                if (json.res) {
+                    var paramArray =
+                    {
+                        title: '填写订单',
+                        url: '/mall/createorder.html?product_id=' + id + '&uid=' + uid,
+                        urlType: 1,
+                        close: false,
+                        isShut: true,
+                        children: []
+                    };
+                    appRedirect(paramArray);
+                }
+                else {
+                    choiceone("此商品暂停销售", "关闭");
+                }
+            }).error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+
+        function gobuy() {
+            var id = $(".productselect").attr("product_id");
+            if (strIsNullOrEmpty(id)) {
+                if (productAttr == 7) {
+                    error('请选择手机充值卡');
+                }
+                else if (productAttr == 8) {
+                    error('请选择流量充值卡');
+                }
+                return;
+            }
+            buy(id);
+        }
+
+        //商品赠送
+        function give() {
+            var id = $(".productselect").attr("product_id");
+            if (strIsNullOrEmpty(id)) {
+                if (productAttr == 7) {
+                    error('请选择手机充值卡');
+                }
+                else if (productAttr == 8) {
+                    error('请选择流量充值卡');
+                }
+                return;
+            }
+            $.get(domain + 'api/mall/GetProductExist', {
+                product_id: id
+            }, function (json) {
+                if (json.res) {
+                    var paramArray =
+                    {
+                        title: '填写订单',
+                        url: '/mall/givepresent.html?product_id=' + id + '&uid=' + uid,
+                        urlType: 1,
+                        close: false,
+                        isShut: true,
+                        children: []
+                    };
+                    appRedirect(paramArray);
+                }
+                else {
+                    choiceone("此商品暂停销售", "关闭");
+                }
+            }).error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+    </script>
+    <style>
+        .product_item:nth-child(3n+1), .product_item:nth-child(3n+2) {
+            margin-right: 1.6%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="pdetail"></div>
+    <div class="bgwhite">
+        <div id="list" class="widper100">
+        </div>
+    </div>
+    <div class="loading">正在加载</div>
+</body>
+
+</html>

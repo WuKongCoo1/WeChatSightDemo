@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>成绩统计</title>
+    <link href="../../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../../js/jquery-1.10.2.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script>
+        var uid = request('uid');
+        var userType = request('user_type');
+        var schoolId = request('school_id');
+        var classId = request('class_id');
+        var examId = request('exam_id');
+        $(function () {
+            document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                bridge = event.bridge;
+                bridge.init(function (message, responseCallback) { });
+            });
+            $.ajax({
+                url: domain + 'api/HomeSchoolCommunication/GetExamClass',
+                type: "get",
+                async: true,
+                data: {
+                    uid: uid,
+                    userType: userType,
+                    schoolId: schoolId,
+                    classId: classId,
+                    examId: examId
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                },
+                success: function (json) {
+                    $('.loading').remove();
+                    if (json.operationStatus == 1) {
+                        var html = '';
+                        $.each(json.rows, function (i, n) {
+                            if (json.rows.length - i == 1) {
+                                html += '<li class=" bb1 patbb  last wb " class_id="' + n.class_id + '" onclick="addExamResult(' + n.exam_id + ', ' + n.class_id + ')">';
+                            } else {
+                                html += '<li class=" bb1 patbb  wb " class_id="' + n.class_id + '"  onclick="addExamResult(' + n.exam_id + ', ' + n.class_id + ', \'' + n.exam_name + '\')">';
+                            }
+                            html += '<div class="widper16 mlper3">';
+                            html += '<img class="noticeitem" src="../../images/choiceicon.png">';
+                            html += '</div>'
+                            html += '<div class="widper47 mlper3 oneline nowrap">' + subStr(n.class_name, 14) + '</div>'
+                            html += '<div class="widper30 g-font indentb oneline">  人数：<span class="y-font">' + n.student_count + '</span> ></div>';
+                            html += '</li>';
+                        });
+                        $('#div_exam_class ul').append(html);
+                    } else {
+
+                    }
+                }
+            });
+        })
+        function addExamResult(exam_id, class_id, exam_name) {
+            var paramArray =
+                    {
+                        title: exam_name,
+                        url: '/HomeSchoolCommunication/exam/examresultadd.html?uid=' + uid + '&user_type=0&schoolId=' + schoolId + '&classId=' + class_id + "&examId=" + exam_id,
+                        urlType: 1,
+                        close: false,
+                        //isShut: true,
+                        children: [
+                        {
+                            title: '保存',
+                            url: 'ExamResultAdd()',
+                            urlType: 2
+                        }]
+                    };
+            appRedirect(paramArray);
+
+        }
+    </script>
+</head>
+<body>
+
+    <div id="div_exam_class" class="bgwhite  patb  deta">
+        <div class="loading">加载中。。。</div>
+        <ul class=" pab"></ul>
+    </div>
+</body>
+</html>

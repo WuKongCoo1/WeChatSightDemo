@@ -1,0 +1,259 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>钱包明细</title>
+    <link href="../css/commom.css" type="text/css" rel="stylesheet" />
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../js/com.js"></script>
+    <script src="../js/touchevent.js"></script>
+    <script>
+        var uid = request("uid");
+
+        var index_use = 1;
+        var size_use = 10;
+        var count_use = 0;
+        var firstLoad_use = true;
+
+        var index_recharge = 1;
+        var size_recharge = 10;
+        var count_recharge = 0;
+        var firstLoad_recharge = true;
+
+        var show_type = 0;
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            $("#rechargeRecord").hide();
+            //消费记录列表
+            GetUseRecord();
+            //充值记录列表
+            GetRechargeRecord();
+
+            $("#sp_useRecord").click(function () {
+                show_type = 0;
+                $("#rechargeRecord").hide();
+                $("#useRecord").show();
+                $('.charge').addClass('unselect');
+                $('.charge').removeClass('selected');
+                $('.spend').removeClass('unselect');
+                $('.spend').addClass('selected');
+            });
+            $("#sp_rechargeRecord").click(function () {
+                show_type = 1;
+                $("#useRecord").hide();
+                $("#rechargeRecord").show();
+                $('.spend').addClass('unselect');
+                $('.spend').removeClass('selected');
+                $('.charge').removeClass('unselect');
+                $('.charge').addClass('selected');
+            });
+
+        });
+
+
+        $(window).scroll(function () {
+            var scrollTop = $(this).scrollTop();
+            var scrollHeight = $(document).height();
+            var windowHeight = $(this).height();
+            if (scrollTop + windowHeight == scrollHeight) {
+                setTimeout(function () {
+                    if (show_type == 0) {
+                        GetUseRecord();
+                    }
+                    else {
+                        GetRechargeRecord();
+                    }
+                }, 400);
+            }
+        })
+
+        function GetUseRecord() {
+            if (firstLoad_use || (index_use - 1) * size_use < count_use) {
+                $.ajax({
+                    type: "get",
+                    async: true,
+                    url: domain + "api/Customer/IdealMoneyUseRecordByUid",
+                    data: {
+                        uid: uid,
+                        change_type: 2,
+                        virtual_currency_type: 1,
+                        index: index_use,
+                        size: size_use
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        var listStr = "";
+                        if (data.rows == null || data.rows.length == 0) {
+                            listStr += "<div class='nodata noleave'>哦吼，这里什么都没有~ </div>";
+                            $('#useRecord').removeClass('bgblock');
+                        }
+                        for (var i = 0; i < data.rows.length; i++) {
+                            listStr += "<div class=' relative'>";
+                            listStr += "<div  class='andelete hide' onclick=\"Del(" + data.rows[i].id + ",'" + data.rows[i].message_type_name + "');event.stopPropagation();\">删除</div>";
+                            if (data.rows.length - i == 1) {
+                                listStr += "<div class='hkbgitem patbb nitem mlper6  wb last relative  ' id='hkbgitem_" + data.rows[i].id + "' >"
+                            } else {
+                                listStr += "<div class='hkbgitem  patbb nitem  mlper6  wb  relative ' id='hkbgitem_" + data.rows[i].id + "'>"
+                            }
+
+                            listStr += "<div class='widper70 '>"
+                            listStr += "<div class='wb  mb1'>"
+                            listStr += "<div>";
+                            listStr += "<div class='idealimg' onclick='product_detail(" + data.rows[i].product_id + ")'>"
+                            listStr += '<img  src="' + (strIsNullOrEmpty(data.rows[i].product_img) ? '../images/default-product.png' : data.rows[i].product_img) + '" />';
+                            listStr += "</div>"
+                            listStr += "</div>";
+                            listStr += "<div class=' widper70 mlper6'>";
+                            if (strIsNullOrEmpty(data.rows[i].product_name)) {
+                                listStr += data.rows[i].remark;
+                            }
+                            else {
+                                listStr += data.rows[i].product_name;
+                            }
+                            //规格
+                            if (data.rows[i].ordered_product_spec != null && data.rows[i].ordered_product_spec.length > 0) {
+                                var specs = $.parseJSON(data.rows[i].ordered_product_spec);
+                                $.each(specs, function (index, x) {
+                                    if (x != null && x.spec_group_name && x.display_name) {
+                                        listStr += '<div class="p14">' + x.spec_group_name + '：' + x.display_name + '</div>';
+                                    }
+                                });
+                            }
+
+                            listStr += "</div>";
+                            listStr += "</div>";
+                            listStr += "<div class='p14 mtonerem'>" + convertDateTimeToString(parseISO8601(data.rows[i].create_time)) + "</div>";
+                            listStr += "</div>";
+                            listStr += "<div class='widper30 p14  tcenter  '>";
+                            if (!strIsNullOrEmpty(data.rows[i].unit_price) && !strIsNullOrEmpty(data.rows[i].product_quantity) && data.rows[i].unit_price != 0 && data.rows[i].product_quantity != 0) {
+                                listStr += "<div class=' g-line mtonerem'>";
+                                listStr += "￥" + data.rows[i].unit_price + "X" + data.rows[i].product_quantity;
+                                listStr += "</div>";
+                            }
+                            else {
+                                listStr += "<div class=' g-line mtonerem'>&nbsp;";
+                                listStr += "</div>";
+                            }
+                            if (!strIsNullOrEmpty(data.rows[i].amount)) {
+                                listStr += "<div class='p14 mt-2'><span class='g-font'>总计:</span><span class='y-font'>￥" + Math.abs(data.rows[i].amount) + "元</span></div>";
+                            }
+                            listStr += "</div>";
+                            listStr += "</div>";
+                            listStr += "<div class='cli'>"
+                            listStr += "<input type='button'  class='delete' value='删除' onclick='del(" + data.rows[i].id + ")' />";
+                            listStr += "</div>";
+                            listStr += "</div>";
+                        }
+                        $("#useRecord").append(listStr);
+                        count_use = data.total;
+                        index_use++;
+                        firstLoad_use = false;
+                        touchev();
+                    }
+                });
+            }
+        }
+
+        function GetRechargeRecord() {
+            if (firstLoad_recharge || (index_recharge - 1) * size_recharge < count_recharge) {
+                $.ajax({
+                    type: "get",
+                    async: true,
+                    url: domain + "api/customer/IdealMoneyUseRecordByUid",
+                    data: {
+                        uid: uid,
+                        change_type: 1,
+                        virtual_currency_type: 1,
+                        index: index_recharge,
+                        size: size_recharge
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        var listStr = "";
+                        if (data.rows == null || data.rows.length == 0) {
+                            listStr += "<div class='nodata noleave'>哦吼，这里什么都没有~ </div>";
+                            $('#rechargeRecord').removeClass('bgblock');
+                        }
+                        for (var i = 0; i < data.rows.length; i++) {
+                            if (data.rows.length - i == 1) {
+                                listStr += "<div class='patb adritem mlper6 wb relative last'>";
+                            } else {
+                                listStr += "<div class='patb adritem mlper6 wb relative'>";
+                            }
+                            listStr += "<div class='widper70'>"
+                            listStr += "<div class='g-line'>" + (strIsNullOrEmpty(data.rows[i].remark) ? "&nbsp;" : data.rows[i].remark) + "</div>";
+                            listStr += "<div class='p15 g-font'>" + convertDateTimeToString(parseISO8601(data.rows[i].create_time)) + "</div>";
+                            listStr += "</div>";
+                            listStr += "<div class='widper30 tcenter y-font oneline'> +" + data.rows[i].amount + "</div>";
+                            listStr += "</div>";
+                        }
+                        $("#rechargeRecord").append(listStr);
+                        count_recharge = data.total;
+                        index_recharge++;
+                        firstLoad_recharge = false;
+                    }
+                });
+            }
+        }
+
+
+        function del(id) {
+            pop('正在删除');
+            $.get(domain + 'api/customer/DelUserVirtualCurrencyDetailById', {
+                id: id
+            }, function (json) {
+                if (json.res == 1) {
+                    clearpop();
+                    error('删除成功');
+                    $("#hkbgitem_" + id).parent().remove();
+                    $(".hkbgitem").last().addClass("last");
+                }
+                else {
+                    error('删除失败');
+                }
+
+            }).error(function (XMLHttpRequest, errorText, errorType) {
+                clearpop();
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function product_detail(product_id) {
+            if (product_id > 0) {
+
+                var paramArray =
+              {
+                  title: '商品详情',
+                  url: '/mall/productdetail.html?product_id=' + product_id + '&uid=' + uid,
+                  urlType: 1,
+                  close: false,
+                  children: []
+              };
+                appRedirect(paramArray);
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div class="tabdiv tab wb widper60">
+        <div class="widper50 spend selected">
+            <span id="sp_useRecord">消费记录</span>
+        </div>
+        <div class="widper50 charge unselect">
+            <span id="sp_rechargeRecord">充值记录</span>
+        </div>
+    </div>
+    <div id="useRecord" class="bgblock mtonerem"></div>
+    <div id="rechargeRecord" class="bgblock mtonerem"></div>
+</body>
+</html>

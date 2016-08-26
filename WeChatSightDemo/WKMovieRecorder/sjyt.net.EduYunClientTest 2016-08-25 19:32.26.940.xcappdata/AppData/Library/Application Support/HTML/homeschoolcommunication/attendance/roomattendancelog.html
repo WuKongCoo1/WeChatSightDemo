@@ -1,0 +1,373 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" name="viewport" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>宿舍考勤记录</title>
+    <link href="../../css/commom.css" type="text/css" rel="stylesheet" />
+
+    <script src="../../js/jquery-1.10.2.min.js"></script>
+    <script src="../../js/com.js"></script>
+    <script>
+
+        var uid = request('uid');
+        var userType = request('user_type');
+        var schoolId = request('school_id');
+        var classId = request('class_id');
+
+        var attDate = request('att_date');
+        var attIds = request('att_ids');
+        var classIds = request('class_ids');
+        var roomIds = request('room_ids');
+        var dormId = request('dorm_id');
+        var attResult = request('att_result');
+
+
+        if (strIsNullOrEmpty(schoolId)) {
+            schoolId = "0";
+        }
+        var index = 0;
+        var size = 10;
+        var count = 0;
+        var firstload = 1;
+        $(function () {
+            if (type == "1" || type == "0") {
+                document.addEventListener('WebViewJavascriptBridgeReady', function (event) {
+                    bridge = event.bridge;
+                    bridge.init(function (message, responseCallback) { });
+                }, false);
+            }
+            if (type == "0" || type == "1") {
+                $('#btnsearch').hide();
+            }
+            if (strIsNullOrEmpty(classIds) && !strIsNullOrEmpty(classId)) {
+                classIds = classId;
+            }
+            //查询下次考勤
+
+
+            if (strIsNullOrEmpty(attDate) && strIsNullOrEmpty(attIds)) {
+                //加载下一次考勤
+                $.ajax({
+                    type: "get",
+                    async: true,
+                    url: domain + "api/HomeSchoolCommunication/GetNextAttendance",
+                    data: {
+                        school_id: schoolId,
+                        attendance_type: 2
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+                    }, success: function (data) {
+                        if (!strIsNullOrEmpty(data.res)) {
+                            var str = '';
+                            str += '<div class="wb">'
+                            str += "<div class='widper60 tright g-line'>下次考勤 " + data.res.substr(0, 2) + ":" + data.res.substr(2, 2) + '</div>';
+                            str += '<div class="widper30">'
+                            str += "<input type='button' class='brush' onclick='Reload()'  />";
+                            str += '</div>';
+                            str += '</div>';
+                            $("#attNext").html(str);
+                        }
+                    }
+                });
+            }
+
+            if (!strIsNullOrEmpty(attResult)) {
+                $('#div_result_count>ul>li').removeClass('current');
+                $('#div_result_count>ul>li[att_result=' + attResult + ']').addClass('current');
+            } else {
+                $('#div_result_count>ul>li:eq(0)').addClass('current');
+            }
+            bindMainReport();
+            $('#div_result_count>ul>li').click(function () {
+                if ($(this).hasClass('current')) {
+                    return;
+                }
+                $('#div_result_count>ul>li').removeClass('current');
+                $(this).addClass('current');
+            });
+        });
+        function bindMainReport() {
+            $.get(domain + 'api/HomeSchoolCommunication/GetRoomAttendanceStatisticsMain',
+            {
+                attendanceDate: attDate,
+                attendanceIds: attIds,
+                classIds: classIds,
+                roomIds: roomIds,
+                attendanceResult: '',
+                userType: userType,
+                uid: uid,
+                schoolId: schoolId,
+                classId: classId
+            }, function (data) {
+                var json = eval(data);
+                if (json.operationStatus == 1) {
+                    attDate = json.attendanceDate;
+                    attIds = json.attendanceIds;
+                    var attNames = json.attendanceNames;
+                    var classNames = "";
+
+                    if (!strIsNullOrEmpty(json.classNames) && json.classNames.split(',').length > 1) {
+                        classNames = subStr(json.classNames, 10) + '等' + json.classNames.split(',').length + '个班';
+                    } else {
+                        classNames = subStr(json.classNames, 10);
+                    }
+                    var lateCount = json.lateCount;
+                    var earlyCount = json.earlyCount;
+                    var leaveCount = json.leaveCount;
+                    var absentCount = json.absentCount;
+                    var normalCount = json.normalCount;
+                    $('#sp_att_date').text(attDate);
+                    $('#sp_att_names').text(attNames);
+                    $('#sp_class_names').text(classNames);
+
+                    $('#li_late_count span').text(lateCount);
+                    $('#li_early_count span').text(earlyCount);
+                    $('#li_leave_count span').text(leaveCount);
+                    $('#li_absent_count span').text(absentCount);
+                    $('#li_normal_count span').text(normalCount);
+                    //$('#sp_all_count').text(lateCount + earlyCount + leaveCount + absentCount + normalCount);
+                    if (!strIsNullOrEmpty(attIds) && attIds.split(',').length > 1) {
+                        console.log(1)
+                        bindAttendanceReport();
+                    } else {
+                        console.log(2)
+                        bindList();
+                    }
+                }
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {               
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function bindAttendanceReport() {
+            console.log(3)
+            var attResultNew = $('#div_result_count>ul>li.current').attr('att_result');
+            $.get(domain + 'api/HomeSchoolCommunication/GetRoomAttendanceStatisticsByAttendance', {
+                attendanceDate: attDate,
+                attendanceIds: attIds,
+                classIds: classIds,
+                dormId: dormId,
+                roomIds: roomIds,
+                attendanceResult: attResultNew,
+                userType: userType,
+                uid: uid,
+                schoolId: schoolId,
+                classId: classId
+            }, function (data) {
+                var json = eval(data);
+                if (json.operationStatus == 1) {
+                    var html = '<ul class="attendance">';
+                    if (json.rows.length > 0) {
+                        $.each(json.rows, function (i, n) {
+                            html += '<li class="bgwhite patb wb" attendance_id="' + n.attendance_id + '" onclick="bindList(' + n.attendance_id + ')" index="0" count="0" firstload="1">';
+                            html += '<div class="sp_attendance">' + n.attendance_name + '</div>';
+                            html += '<div class="sp_count">' + n.attendance_count + '</div>';
+                            html += '</li>';
+                            html += '<ul class="student">';
+                            html += '</ul>';
+                        });
+                    }
+                    html += '</ul>';
+                    $('#div_log').append(html);
+                }
+                index += 1;
+            }, 'json').error(function (XMLHttpRequest, errorText, errorType) {
+                error("您当前的网络不稳定，请稍后重试。(" + XMLHttpRequest.status.toString() + ")");
+            });
+        }
+
+        function bindList(attId) {
+            var attendanceIds = attIds;
+            if (!strIsNullOrEmpty(attId)) {
+                $('#div_log ul.attendance>li').removeClass('current');
+                $('#div_log ul.attendance>li').next().hide();
+                index = $('#div_log ul.attendance li[attendance_id=' + attId + ']').addClass('current').next().show();
+                attendanceIds = attId;
+                index = parseInt($('ul.attendance li[attendance_id=' + attId + ']').attr('index'), 10);
+                count = parseInt($('ul.attendance li[attendance_id=' + attId + ']').attr('count'), 10);
+                firstload = parseInt($('ul.attendance li[attendance_id=' + attId + ']').attr('firstload'), 10);
+            }
+            var attResultNew = $('#div_result_count li.current').attr('att_result');
+            if (firstload == 1 || index * size - 1 <= count) {
+                console.log(4)
+                $.get(domain + 'api/HSCForImageURLController/GetRoomAttendanceLogDetail', {
+                    attendanceDate: attDate,
+                    attendanceIds: attendanceIds,
+                    classIds: classIds,
+                    dormId: dormId,
+                    roomIds: roomIds,
+                    attendanceResult: attResultNew,
+                    userType: userType,
+                    uid: uid,
+                    schoolId: schoolId,
+                    classId: classId,
+                    index: index + 1,
+                    size: size
+                }, function (data) {
+                    var json = eval(data);
+                    if (json.operationStatus == 1) {
+                        count = json.count;
+                        var html = '';
+                        if (firstload && count == 0) {
+                            html += '<div class="nodata noleave">哦吼~这里什么都没有</div>';
+                        } else {
+                            $.each(json.rows, function (i, n) {
+                                html += '<li class=" pal6  wb bgwhite" uid_child="' + n.uid + '">';
+                                html += '<div class="widper20 tcenter"><img class="headimg " onerror="onerror=null;src=\'../../images/default-avatar.png\'"  src="' + (strIsNullOrEmpty(n.img) ? '../../images/default-avatar.png' : n.img) + '" alt="' + n.real_name + '" /></div>';
+
+                                if (i == json.rows.length - 1 && Math.ceil(json.count / size) == index + 1) {
+                                    html += '<div class= "widper80 indentb last bgimgitem wb">'
+                                } else {
+                                    html += '<div class= "widper80 indentb bgimgitem wb">'
+                                }
+                                html += '<div class= "widper70">';
+                                html += '<div class="child_name g-line indentb mt10 patb ">' + n.real_name + '</div>';
+                                html += '<div class="card_time  p15">' + n.swing_date + '</div>';
+                                html += '</div>';
+                                html += '<div class="widper30 tcenter oneline mt10">'
+                                html += '<span class="attendance_result y-font ">' + getAttendanceResult(parseInt(n.attendance_result, 10)) + '</span>';
+                                html += '</div>'
+                                html += '</div>'
+                                html += '</li>';
+                            });
+                        }
+                        if (!strIsNullOrEmpty(attId)) {
+                            $('ul.attendance li[attendance_id=' + attId + ']').next('ul').append(html);
+                        } else {
+
+                            if ($('#div_log>ul.student').length == 0) {
+                                html = '<ul class="student">' + html + '</ul>';
+                                $('#div_log').append(html);
+                            } else {
+                                $('#div_log>ul.student').append(html);
+                            }
+                        }
+                    }
+                    index++;
+                    firstload = 0;
+                    if (!strIsNullOrEmpty(attId)) {
+                        $('ul.attendance li[attendance_id=' + attId + ']').attr('index', index);
+                        $('ul.attendance li[attendance_id=' + attId + ']').attr('count', count);
+                        $('ul.attendance li[attendance_id=' + attId + ']').attr('firstload', firstload);
+                    }
+                }, 'json');
+            }
+        }
+        $(window).scroll(function () {
+            var scrollTop = $(this).scrollTop();
+            var scrollHeight = $(document).height();
+            var windowHeight = $(this).height();
+            if (scrollTop + windowHeight == scrollHeight) {
+                setTimeout(function () {
+                    if ($('ul.attendance').length > 0) {
+                        var attId = $('ul.attendance li.current').attr('attendance_id');
+                        bindList(attId);
+                    } else {
+                        bindList();
+                    }
+                }, 400);
+            }
+        })
+        function searchStudent() {
+            var paramArray =
+                {
+                    title: '宿舍考勤',
+                    url: '/HomeSchoolCommunication/attendance/studentsearch.html?uid=' + uid + '&user_type=' + userType + '&school_id=' + schoolId + '&class_id=' + classId + '&att_date=' + attDate + '&att_type=2',
+                    urlType: 1,
+                    close: false,
+                    children: []
+                };
+            appRedirect(paramArray);
+        }
+        function choiceAttendance() {
+            var attResultNew = $('#div_result_count li.current').attr('att_result');
+            var url = '/HomeSchoolCommunication/dailyattendance/attendanceSelect.html?uid=' + uid + '&user_type=' + userType + '&school_id=' + schoolId + '&class_id=' + classId;
+            url += '&date=' + attDate + '&chk_attendance_ids=' + attIds + '&chk_class_ids=' + classIds + '&chk_room_ids=' + roomIds + '&attendance_type=2&page_type=2';  //'&status=' + attResultNew +
+            var paramArray =
+                {
+                    title: '筛选',
+                    url: url,
+                    urlType: 1,
+                    close: false,
+                    children: []
+                };
+            appRedirect(paramArray);
+        }
+
+        function Reload() {
+            location.reload();
+        }
+
+    </script>
+</head>
+<body>
+    <div id="attNext"></div>
+    <button id="btnsearch" onclick="choiceAttendance()">筛选</button>
+    <div class="wb searchdiv">
+        <div class="widper80">
+            <input type="text" placeholder="输入学生姓名查找" class="bgiconitem last indentb" id="txtRealName" value="" onclick="searchStudent()" />
+        </div>
+        <div class="widper20 tright">
+            <button onclick="searchStudent();" class="searbtn"></button>
+        </div>
+    </div>
+    <div class="tcenter mtb5 palr">
+        <span id="sp_att_date"></span>
+        <span id="sp_att_names"></span>
+        <span id="sp_class_names"></span>
+    </div>
+    <div id="div_result_count" class=" bgwhite ">
+        <ul class="widper100 wb">
+            <li class="widper20  tcenter  patb  zero" id="li_late_count" class="current" att_result="1">
+                <div class="br1">
+                    <div class=" tcenter  patb">
+                        迟到
+                    </div>
+                    <span>0</span>
+                </div>
+            </li>
+            <li class="widper20  tcenter  patb  zero" id="li_early_count" att_result="2">
+                <div class="br1">
+                    <div class=" tcenter  patb">
+                        早退
+                    </div>
+                    <span>0</span>
+                </div>
+            </li>
+            <li class="widper20  tcenter  patb  zero" id="li_leave_count" att_result="3">
+                <div class="br1">
+                    <div class=" tcenter  patb">
+                        请假
+                    </div>
+                    <span>0</span>
+                </div>
+            </li>
+            <li class="widper20  tcenter  patb  zero" id="li_absent_count" att_result="4">
+                <div class="br1">
+                    <div class=" tcenter  patb">
+                        缺卡
+                    </div>
+                    <span>0</span>
+                </div>
+            </li>
+            <li class="widper20  tcenter  patb  zero" id="li_normal_count" att_result="0">
+                <div class="br1">
+                    <div class=" tcenter  patb">
+                        正常
+                    </div>
+                    <span>0</span>
+                </div>
+            </li>
+        </ul>
+        <div style="clear: both;"></div>
+    </div>
+    <div id="div_log" class="mt10">
+        <!--<div>
+            应考勤人数：<span id="sp_all_count"></span>
+        </div>-->
+    </div>
+</body>
+</html>
