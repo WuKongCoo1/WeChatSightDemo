@@ -36,11 +36,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "WeChatSightDemo/WKMovieRecorder/WKVideoConverter.m"
-            timestampString = "493887234.411828"
+            timestampString = "493897952.149968"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "371"
-            endingLineNumber = "371"
+            startingLineNumber = "369"
+            endingLineNumber = "369"
             landmarkName = "-convertVideoUIImagesWithURL:finishBlock:"
             landmarkType = "5">
          </BreakpointContent>
@@ -52,11 +52,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "WeChatSightDemo/WKMovieRecorder/WKVideoConverter.m"
-            timestampString = "493887448.268652"
+            timestampString = "493897952.149968"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "386"
-            endingLineNumber = "386"
+            startingLineNumber = "384"
+            endingLineNumber = "384"
             landmarkName = "-convertVideoToGifImageWithURL:destinationUrl:finishBlock:"
             landmarkType = "5">
             <Locations>
@@ -100,11 +100,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "WeChatSightDemo/WKMovieRecorder/WKVideoConverter.m"
-            timestampString = "493887479.709965"
+            timestampString = "493897952.149968"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "319"
-            endingLineNumber = "319"
+            startingLineNumber = "317"
+            endingLineNumber = "317"
             landmarkName = "-convertVideoUIImagesWithURL:finishBlock:"
             landmarkType = "5">
          </BreakpointContent>

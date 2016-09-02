@@ -352,17 +352,17 @@ typedef id (^HandleBlcok)(AVAssetReaderTrackOutput *outPut, AVAssetTrack *videoT
             // 要确保nominalFrameRate>0，之前出现过android拍的0帧视频
             while ([strongSelf.reader status] == AVAssetReaderStatusReading && videoTrack.nominalFrameRate > 0) {
                  @autoreleasepool {
-                // 读取 video sample
-                CMSampleBufferRef videoBuffer = [videoReaderOutput copyNextSampleBuffer];
-                
-                if (!videoBuffer) {
-                    break;
-                }
-                
-                [images addObject:[WKVideoConverter convertSampleBufferRefToUIImage:videoBuffer]];
-                
-                CFRelease(videoBuffer);
-            }
+                    // 读取 video sample
+                    CMSampleBufferRef videoBuffer = [videoReaderOutput copyNextSampleBuffer];
+                    
+                    if (!videoBuffer) {
+                        break;
+                    }
+                    
+                    [images addObject:[WKVideoConverter convertSampleBufferRefToUIImage:videoBuffer]];
+                    
+                    CFRelease(videoBuffer);
+                 }
             
             
          }
