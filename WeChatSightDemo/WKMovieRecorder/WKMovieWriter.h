@@ -3,7 +3,7 @@
 //  CapturePause
 //
 //  Created by 吴珂 on 16/7/7.
-//  Copyright © 2016年 吴珂. All rights reserved.
+//  Copyright © 2016年 Geraint Davies. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>

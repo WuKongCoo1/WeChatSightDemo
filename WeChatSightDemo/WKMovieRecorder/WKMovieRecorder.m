@@ -3,7 +3,7 @@
 //  CapturePause
 //
 //  Created by 吴珂 on 16/7/7.
-//  Copyright © 2016年 吴珂. All rights reserved.
+//  Copyright © 2016年 Geraint Davies. All rights reserved.
 //
 
 #import "WKMovieRecorder.h"
@@ -38,12 +38,11 @@ AVCaptureVideoDataOutputSampleBufferDelegate,
 AVCaptureAudioDataOutputSampleBufferDelegate,
 WKMovieWriterDelegate
 >
-
 {
     AVCaptureSession* _session;
     AVCaptureVideoPreviewLayer* _preview;
+    
     WKMovieWriter* _writer;
-    //暂停录制
     BOOL _isCapturing;
     BOOL _isPaused;
     BOOL _discont;
@@ -53,7 +52,14 @@ WKMovieWriterDelegate
     CMTime _lastAudio;
     
     NSTimeInterval _maxDuration;
+    //    UIImage *_lastFrame;
 }
+
+/**
+ 准备完成后调用的block
+ */
+@property (nonatomic, copy) void (^prepareBlock)(void);
+
 
 // Session management.
 @property (nonatomic, strong) dispatch_queue_t sessionQueue;
@@ -130,8 +136,14 @@ WKMovieWriterDelegate
     [_session beginConfiguration];
     [self.session removeInput:self.videoDeviceInput];
     [_session commitConfiguration];
-
-    if (_session) {
+    
+    
+    //    [_session removeInput:self.videoDeviceInput];
+    
+    
+    
+    if ([_session isRunning]){
+        [_session stopRunning];
         _session = nil;
     }
     
@@ -149,38 +161,31 @@ WKMovieWriterDelegate
         _currentFile = 0;
         _discont = NO;
         
+        
+        
+        
         self.session = [[AVCaptureSession alloc] init];
+        
         self.result = CaptureAVSetupResultSuccess;
         
         //权限检查
-        switch ([AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo]) {
-            case AVAuthorizationStatusNotDetermined: {
-                [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
-                    if (granted) {
-                        self.result = CaptureAVSetupResultSuccess;
-                    }
-                }];
-                break;
-            }
-            case AVAuthorizationStatusAuthorized: {
+        dispatch_group_t group = dispatch_group_create();
+        [self checkAuthorization:group];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+                NSLog(@"notity--------");
+            });
+        });
+        
+        dispatch_group_notify(group, self.sessionQueue, ^{
+            if (self.result != CaptureAVSetupResultSuccess) {
                 
-                break;
+                if (self.authorizationResultBlock) {
+                    self.authorizationResultBlock(NO);
+                }
+                return;
             }
-            default:{
-                self.result = CaptureAVSetupResultCameraNotAuthorized;
-            }
-        }
-        
-        if ( self.result != CaptureAVSetupResultSuccess) {
-            
-            if (self.authorizationResultBlock) {
-                self.authorizationResultBlock(NO);
-            }
-            return;
-        }
-        
-        dispatch_async(self.sessionQueue, ^{
-            
             
             AVCaptureDevice *captureDevice = [[self class] deviceWithMediaType:AVMediaTypeVideo preferringPosition:AVCaptureDevicePositionBack];
             
@@ -192,6 +197,7 @@ WKMovieWriterDelegate
             if (!_videoDeviceInput) {
                 NSLog(@"未找到设备");
             }
+            
             
             //配置会话
             [self.session beginConfiguration];
@@ -247,7 +253,7 @@ WKMovieWriterDelegate
                     if(_videoConnection.isVideoStabilizationSupported){
                         _videoConnection.preferredVideoStabilizationMode = AVCaptureVideoStabilizationModeAuto;
                     }
-
+                    
                     
                     UIInterfaceOrientation statusBarOrientation = [UIApplication sharedApplication].statusBarOrientation;
                     AVCaptureVideoOrientation initialVideoOrientation = AVCaptureVideoOrientationPortrait;
@@ -257,7 +263,7 @@ WKMovieWriterDelegate
                     
                     _videoConnection.videoOrientation = initialVideoOrientation;
                 }
-
+                
             }
             else{
                 NSLog(@"无法添加视频输入到会话");
@@ -280,23 +286,90 @@ WKMovieWriterDelegate
                 NSLog( @"Could not add audio device input to the session" );
             }
             
+            
+            
             AVCaptureAudioDataOutput *audioOut = [[AVCaptureAudioDataOutput alloc] init];
             // Put audio on its own queue to ensure that our video processing doesn't cause us to drop audio
             dispatch_queue_t audioCaptureQueue = dispatch_queue_create( "wukong.movieRecorder.audio", DISPATCH_QUEUE_SERIAL );
             [audioOut setSampleBufferDelegate:self queue:audioCaptureQueue];
             
+            
             if ( [self.session canAddOutput:audioOut] ) {
                 [self.session addOutput:audioOut];
             }
             _audioConnection = [audioOut connectionWithMediaType:AVMediaTypeAudio];
+            
             [self.session commitConfiguration];
+            
+            if (self.prepareBlock) {
+                if (!_session.isRunning) {
+                    [_session startRunning];
+                }
+                
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    
+                    self.prepareBlock();
+                });
+            }
         });
         
         _preview = [AVCaptureVideoPreviewLayer layerWithSession:_session];
         _preview.videoGravity = AVLayerVideoGravityResizeAspectFill;
     }
     
+    
+    
+    
     [self addObservers];
+}
+
+
+/**
+ 权限检查
+ */
+- (void)checkAuthorization:(dispatch_group_t)group
+{
+    dispatch_group_enter(group);
+    switch ([AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo]) {
+        case AVAuthorizationStatusNotDetermined: {
+            [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
+                self.result = granted ? CaptureAVSetupResultSuccess : CaptureAVSetupResultCameraNotAuthorized;
+                dispatch_group_leave(group);
+            }];
+            break;
+        }
+        case AVAuthorizationStatusAuthorized: {
+            dispatch_group_leave(group);
+            break;
+        }
+        default:{
+            self.result = CaptureAVSetupResultCameraNotAuthorized;
+            dispatch_group_leave(group);
+        }
+    }
+    
+    if (self.result != CaptureAVSetupResultCameraNotAuthorized) {
+        dispatch_group_enter(group);
+        switch ([AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio]) {
+            case AVAuthorizationStatusNotDetermined: {
+                [AVCaptureDevice requestAccessForMediaType:AVMediaTypeAudio completionHandler:^(BOOL granted) {
+                    
+                    self.result = granted ? CaptureAVSetupResultSuccess : CaptureAVSetupResultCameraNotAuthorized;
+                    dispatch_group_leave(group);
+                }];
+                break;
+            }
+            case AVAuthorizationStatusAuthorized: {
+                dispatch_group_leave(group);
+                break;
+            }
+            default:{
+                self.result = CaptureAVSetupResultCameraNotAuthorized;
+                dispatch_group_leave(group);
+            }
+        }
+        
+    }
 }
 
 #pragma mark - Recording
@@ -336,16 +409,8 @@ WKMovieWriterDelegate
 
 - (void)prepareCaptureWithBlock:(void (^)())block
 {
-    dispatch_async(_sessionQueue, ^{
-        [self setup];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            
-            block();
-        });
-        if (!_session.isRunning) {
-            [_session startRunning];
-        }
-    });
+    self.prepareBlock = block;
+    [self setup];
 }
 
 - (void) stopCapture
@@ -356,6 +421,7 @@ WKMovieWriterDelegate
 
 - (void)cancleCaputre
 {
+    [_session stopRunning];
     [self finishCaptureWithReason:WKRecorderFinishedReasonCancle];
 }
 
@@ -475,9 +541,12 @@ WKMovieWriterDelegate
 
 - (void)startSession
 {
-    if (!_session.isRunning) {
-        [_session startRunning];
-    }
+    dispatch_async(self.sessionQueue, ^{
+        
+        if (!_session.isRunning) {
+            [_session startRunning];
+        }
+    });
 }
 
 
@@ -564,11 +633,11 @@ WKMovieWriterDelegate
             self.videoDeviceInput = videoDeviceInput;
         }
         else {
-
+            
             [self.session addInput:self.videoDeviceInput];
         }
         
-
+        
         
         _videoConnection = [self.videoDataOutput connectionWithMediaType:AVMediaTypeVideo];
         
@@ -586,6 +655,9 @@ WKMovieWriterDelegate
         
         [self.session commitConfiguration];
         
+        if (![_session isRunning]) {
+            [_session startRunning];
+        }
     } );
 }
 
@@ -671,9 +743,21 @@ WKMovieWriterDelegate
         {
             _lastVideo = pts;
             @autoreleasepool {
-                UIImage *frame = [WKVideoConverter convertSampleBufferRefToUIImage:sampleBuffer];
-                [self.frames addObject:frame];
+                if (_maxDuration < 20.f || self.frames.count == 0) {
+                    UIImage *frame = [WKVideoConverter convertSampleBufferRefToUIImage:sampleBuffer];
+                    [self.frames addObject:frame];
+                }
             }
+            //                _lastFrame = [WKVideoConverter convertSampleBufferRefToUIImage:sampleBuffer];
+            
+            
+            
+            //            _lastFrame = [[UIImage alloc] init];
+            
+            //            CGImageRef cgImage = [WKVideoConverter convertSamepleBufferRefToCGImage:sampleBuffer];
+            //            [self.frames addObject:((__bridge id)(cgImage))];
+            //            CGImageRelease(cgImage);
+            //            _lastFrame = [[UIImage alloc] init];
             [_writer appendVideoBuffer:sampleBuffer];
         }
         else
@@ -704,12 +788,15 @@ WKMovieWriterDelegate
     }];
 #endif
     
-    if (self.finishBlock) {
-        NSDictionary *info = @{WKRecorderMovieURL : [NSURL fileURLWithPath:path],
-                               WKRecorderLastFrame : [self.frames lastObject],
-                               WKRecorderDuration : @(_duration),
-                               WKRecorderAllFrames : [self.frames mutableCopy],
-                               WKRecorderFirstFrame : [self.frames firstObject]};
+    if (self.finishBlock){
+        NSMutableDictionary *info = [@{WKRecorderMovieURL : [NSURL fileURLWithPath:path],
+                                       WKRecorderDuration : @(_duration),
+                                       } mutableCopy];
+        if (self.frames.count != 0) {//小视频
+            [info setObject:[self.frames mutableCopy] forKey:WKRecorderAllFrames];
+            [info setObject:[self.frames firstObject] forKey:WKRecorderFirstFrame];
+            [info setObject:[self.frames lastObject] forKey:WKRecorderLastFrame];
+        }
         self.finishBlock(info, self.finishReason);
     }
     
@@ -720,6 +807,15 @@ WKMovieWriterDelegate
 #pragma mark KVO and Notifications
 - (void)addObservers
 {
+    //    [self.session addObserver:self forKeyPath:@"running" options:NSKeyValueObservingOptionNew context:SessionRunningContext];
+    //    [self.stillImageOutput addObserver:self forKeyPath:@"capturingStillImage" options:NSKeyValueObservingOptionNew context:CapturingStillImageContext];
+    
+    //    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(subjectAreaDidChange:) name:AVCaptureDeviceSubjectAreaDidChangeNotification object:self.videoDeviceInput.device];
+    //    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sessionRuntimeError:) name:AVCaptureSessionRuntimeErrorNotification object:self.session];
+    // A session can only run when the app is full screen. It will be interrupted in a multi-app layout, introduced in iOS 9,
+    // see also the documentation of AVCaptureSessionInterruptionReason. Add observers to handle these session interruptions
+    // and show a preview is paused message. See the documentation of AVCaptureSessionWasInterruptedNotification for other
+    // interruption reasons.
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sessionWasInterrupted:) name:AVCaptureSessionWasInterruptedNotification object:self.session];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sessionInterruptionEnded:) name:AVCaptureSessionInterruptionEndedNotification object:self.session];
 }
@@ -876,6 +972,10 @@ WKMovieWriterDelegate
             
             _videoConnection.videoOrientation = initialVideoOrientation;
         }
+        
+        //        videoOutput.videoSettings = [NSDictionary dictionaryWithObjectsAndKeys:
+        //                                     [NSNumber numberWithInt:kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange], kCVPixelBufferPixelFormatTypeKey,
+        //                                     nil];
     }
 }
 /**
@@ -914,6 +1014,12 @@ WKMovieWriterDelegate
         }
     }
 }
+
+
+//- (NSTimeInterval)duration
+//{
+//    return _duration;
+//}
 
 - (NSMutableArray *)frames
 {

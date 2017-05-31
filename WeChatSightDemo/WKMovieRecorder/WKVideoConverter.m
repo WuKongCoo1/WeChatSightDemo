@@ -308,6 +308,8 @@ typedef id (^HandleBlcok)(AVAssetReaderTrackOutput *outPut, AVAssetTrack *videoT
 //转成UIImage
 - (void)convertVideoUIImagesWithURL:(NSURL *)url finishBlock:(void (^)(id images, NSTimeInterval duration))finishBlock
 {
+   
+    
         AVAsset *asset = [AVAsset assetWithURL:url];
         NSError *error = nil;
         self.reader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
@@ -352,17 +354,17 @@ typedef id (^HandleBlcok)(AVAssetReaderTrackOutput *outPut, AVAssetTrack *videoT
             // 要确保nominalFrameRate>0，之前出现过android拍的0帧视频
             while ([strongSelf.reader status] == AVAssetReaderStatusReading && videoTrack.nominalFrameRate > 0) {
                  @autoreleasepool {
-                    // 读取 video sample
-                    CMSampleBufferRef videoBuffer = [videoReaderOutput copyNextSampleBuffer];
-                    
-                    if (!videoBuffer) {
-                        break;
-                    }
-                    
-                    [images addObject:[WKVideoConverter convertSampleBufferRefToUIImage:videoBuffer]];
-                    
-                    CFRelease(videoBuffer);
-                 }
+                // 读取 video sample
+                CMSampleBufferRef videoBuffer = [videoReaderOutput copyNextSampleBuffer];
+                
+                if (!videoBuffer) {
+                    break;
+                }
+                
+                [images addObject:[WKVideoConverter convertSampleBufferRefToUIImage:videoBuffer]];
+                
+                CFRelease(videoBuffer);
+            }
             
             
          }

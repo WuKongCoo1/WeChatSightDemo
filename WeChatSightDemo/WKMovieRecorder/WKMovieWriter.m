@@ -3,7 +3,7 @@
 //  CapturePause
 //
 //  Created by 吴珂 on 16/7/7.
-//  Copyright © 2016年 吴珂. All rights reserved.
+//  Copyright © 2016年 Geraint Davies. All rights reserved.
 //
 
 
@@ -110,6 +110,16 @@
         _cropSize = [UIScreen mainScreen].bounds.size;
         
     }
+    
+    //    CGFloat ratio = SCREEN_HEIGHT  / SCREEN_WIDTH;
+    //
+    //    while (fmodf(_cropSize.width, 16) != 0) {
+    //        _cropSize.width ++;
+    //    }
+    //
+    //    _cropSize.height = _cropSize.width * ratio;
+    
+    
     
     videoSettings = [NSDictionary dictionaryWithObjectsAndKeys:
                      AVVideoCodecH264, AVVideoCodecKey,

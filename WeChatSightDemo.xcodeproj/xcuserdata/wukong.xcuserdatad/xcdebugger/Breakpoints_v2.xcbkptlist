@@ -42,7 +42,7 @@
             startingLineNumber = "369"
             endingLineNumber = "369"
             landmarkName = "-convertVideoUIImagesWithURL:finishBlock:"
-            landmarkType = "5">
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -58,7 +58,7 @@
             startingLineNumber = "384"
             endingLineNumber = "384"
             landmarkName = "-convertVideoToGifImageWithURL:destinationUrl:finishBlock:"
-            landmarkType = "5">
+            landmarkType = "7">
             <Locations>
                <Location
                   shouldBeEnabled = "No"
@@ -106,7 +106,7 @@
             startingLineNumber = "317"
             endingLineNumber = "317"
             landmarkName = "-convertVideoUIImagesWithURL:finishBlock:"
-            landmarkType = "5">
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

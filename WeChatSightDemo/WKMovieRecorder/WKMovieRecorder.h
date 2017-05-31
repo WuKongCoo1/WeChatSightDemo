@@ -3,7 +3,7 @@
 //  CapturePause
 //
 //  Created by 吴珂 on 16/7/7.
-//  Copyright © 2016年 吴珂. All rights reserved.
+//  Copyright © 2016年 Geraint Davies. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -22,23 +22,16 @@ typedef NS_ENUM(NSInteger, WKRecorderFinishedReason){
 };
 
 /**
- *  录制结束
+ *  录制结束invoke
  *
  *  @param info     回调信息
  *  @param isCancle YES:取消 NO:正常结束
  */
 typedef void(^FinishRecordingBlock)(NSDictionary *info, WKRecorderFinishedReason finishReason);
-/**
- *  焦点改变
- */
-typedef void(^FocusAreaDidChanged)();
-/**
- *  权限验证
- *
- *  @param success 是否成功
- */
-typedef void(^AuthorizationResult)(BOOL success);
 
+typedef void(^FocusAreaDidChanged)();
+
+typedef void(^AuthorizationResult)(BOOL success);
 
 @interface WKMovieRecorder : NSObject
 
@@ -64,13 +57,19 @@ typedef void(^AuthorizationResult)(BOOL success);
 
 - (instancetype)initWithMaxDuration:(NSTimeInterval)duration;
 
+@property (nonatomic, assign) CGSize cropSize;
+
 @property (nonatomic, strong, readonly) AVCaptureConnection *videoConnection;
 @property (nonatomic, strong, readonly) AVCaptureConnection *audioConnection;
-@property (nonatomic, strong, readonly) AVCaptureDeviceInput *videoDeviceInput;
-@property (nonatomic, assign, readonly) NSTimeInterval duration;
-@property (nonatomic, strong, readonly) NSURL *recordURL;//临时视频地址
 
-@property (nonatomic, assign) CGSize cropSize;
+
+@property (nonatomic, strong, readonly) AVCaptureDeviceInput *videoDeviceInput;
+
+@property (nonatomic, assign, readonly) NSTimeInterval duration;
+
+//@property (nonatomic, strong, readonly) UIImage *lastFrame;//最后一帧图片
+
+@property (nonatomic, strong, readonly) NSURL *recordURL;//临时视频地址
 
 - (BOOL)isCapturing;
 @end
